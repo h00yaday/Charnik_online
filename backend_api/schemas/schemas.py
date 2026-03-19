@@ -1,5 +1,32 @@
 from pydantic import BaseModel, ConfigDict, Field
-from typing import Dict
+from typing import Dict, List, Optional
+
+class AttackBase(BaseModel):
+    name: str
+    attack_bonus: int = 0
+    damage_dice: str
+    damage_type: str
+
+class AttackCreate(AttackBase):
+    pass
+
+class AttackResponse(AttackBase):
+    id: int
+    character_id: int
+    model_config = ConfigDict(from_attributes=True)
+
+class SpellBase(BaseModel):
+    name: str
+    level: int = 0
+    description: Optional[str] = None
+
+class SpellCreate(SpellBase):
+    pass
+
+class SpellResponse(SpellBase):
+    id: int
+    character_id: int
+    model_config = ConfigDict(from_attributes=True)
 
 class CharacterBase(BaseModel):
     name: str
@@ -14,7 +41,8 @@ class CharacterBase(BaseModel):
     max_hp: int = 10
     current_hp: int = 10
 
-    spell_slots: Dict[str, int] = Field(default_factory=dict) 
+    spell_slots: Dict[str, int] = Field(default_factory=dict)
+    skills: Dict[str, int] = Field(default_factory=dict) 
 
 class CharacterCreate(CharacterBase):
     pass 
@@ -22,10 +50,10 @@ class CharacterCreate(CharacterBase):
 class CharacterResponse(CharacterBase):
     id: int
     owner_id: int
+    attacks: List[AttackResponse] = []
+    spells: List[SpellResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
-
-
 
 class UserCreate(BaseModel):
     username: str

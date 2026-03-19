@@ -1,7 +1,5 @@
-
 .env
 .env.*
-!.env.example   # Исключение: пример конфига оставляем в Git, чтобы команда видела структуру
 *.pem
 *.key
 credentials.json

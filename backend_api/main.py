@@ -3,7 +3,7 @@ from contextlib import asynccontextmanager
 
 from db.database import engine
 from db.models import Base
-from api import characters, auth
+from api import characters, auth, roller
 
 
 @asynccontextmanager
@@ -16,6 +16,7 @@ app = FastAPI(title="D&D Manager API", lifespan=lifespan)
 
 app.include_router(auth.router)
 app.include_router(characters.router)
+app.include_router(roller.router)
 
 @app.get("/")
 async def root():
