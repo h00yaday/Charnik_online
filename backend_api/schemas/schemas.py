@@ -3,6 +3,19 @@ from typing import Dict, List, Optional
 
 DICE_PATTERN = r"^\s*(?:[+-]?\s*(?:\d+[dD]\d+|\d+)\s*)+$"
 
+class FeatureBase(BaseModel):
+    name: str
+    description: str
+    source: str = "Класс"
+
+class FeatureCreate(FeatureBase):
+    pass
+
+class FeatureResponse(FeatureBase):
+    id: int
+    character_id: int
+    model_config = ConfigDict(from_attributes=True)
+
 class AttackBase(BaseModel):
     name: str
     attack_bonus: int = 0
@@ -36,18 +49,27 @@ class SpellResponse(SpellBase):
 class CharacterBase(BaseModel):
     name: str
     level: int = 1
+    race: str = "Человек"
+    character_class: str = "Воин"
+    subclass: Optional[str] = None
+    background: Optional[str] = None
+
     strength: int = 10
     dexterity: int = 10
     constitution: int = 10
     intelligence: int = 10
     wisdom: int = 10
     charisma: int = 10
+    
     armor_class: int = 10
     max_hp: int = 10
     current_hp: int = 10
+    speed: int = 30
+    initiative_bonus: int = 0
 
     spell_slots: Dict[str, int] = Field(default_factory=dict)
     skills: Dict[str, int] = Field(default_factory=dict) 
+    saving_throws: Dict[str, int] = Field(default_factory=dict)
 
 class CharacterCreate(CharacterBase):
     pass 
@@ -57,8 +79,18 @@ class CharacterResponse(CharacterBase):
     owner_id: int
     attacks: List[AttackResponse] = []
     spells: List[SpellResponse] = []
+    features: List[FeatureResponse] = []
 
     model_config = ConfigDict(from_attributes=True)
+
+class CharacterUpdate(BaseModel):
+    current_hp: Optional[int] = None
+    max_hp: Optional[int] = None
+    armor_class: Optional[int] = None
+    level: Optional[int] = None
+    skills: Optional[Dict[str, int]] = None
+    saving_throws: Optional[Dict[str, int]] = None
+    spell_slots: Optional[Dict[str, int]] = None
 
 class UserCreate(BaseModel):
     username: str
@@ -69,3 +101,6 @@ class UserResponse(BaseModel):
     username: str
 
     model_config = ConfigDict(from_attributes=True)
+
+class HPUpdate(BaseModel):
+    current_hp: int

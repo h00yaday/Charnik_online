@@ -4,14 +4,13 @@ from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 import random 
 from core.dice import parse_and_roll 
-
 from db.database import get_db
 from db.models import Character, User, Attack, Spell
 from api.dependencies import get_current_user
 from schemas.schemas import (
-    CharacterCreate, CharacterResponse, 
+    CharacterCreate, CharacterResponse, CharacterUpdate,
     AttackCreate, AttackResponse,
-    SpellCreate, SpellResponse
+    SpellCreate, SpellResponse, FeatureCreate, FeatureResponse
 )
 
 router = APIRouter(prefix="/characters", tags=["Characters"])
@@ -32,7 +31,8 @@ async def create_character(
     
     stmt = select(Character).where(Character.id == new_char.id).options(
         selectinload(Character.attacks),
-        selectinload(Character.spells)
+        selectinload(Character.spells),
+        selectinload(Character.features)
     )
     result = await db.execute(stmt)
     character_with_relations = result.scalar_one()
@@ -47,7 +47,8 @@ async def get_characters(
 ):
     stmt = select(Character).where(Character.owner_id == current_user.id).options(
         selectinload(Character.attacks),
-        selectinload(Character.spells)
+        selectinload(Character.spells),
+        selectinload(Character.features)
     )
     result = await db.execute(stmt)
     characters = result.scalars().all()
@@ -145,3 +146,134 @@ async def roll_character_attack(
             "type": attack.damage_type
         }
     }
+
+@router.patch("/{character_id}", response_model=CharacterResponse)
+async def update_character(
+    character_id: int,
+    char_update: CharacterUpdate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    stmt = select(Character).where(Character.id == character_id, Character.owner_id == current_user.id).options(
+        selectinload(Character.attacks),
+        selectinload(Character.spells),
+        selectinload(Character.features)
+    )
+    result = await db.execute(stmt)
+    character = result.scalar_one_or_none()
+    
+    if not character:
+        raise HTTPException(status_code=404, detail="Персонаж не найден")
+
+    update_data = char_update.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(character, key, value)
+
+    await db.commit()
+    await db.refresh(character)
+    return character
+    
+@router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_character(
+    character_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(select(Character).where(Character.id == character_id, Character.owner_id == current_user.id))
+    character = result.scalar_one_or_none()
+    
+    if not character:
+        raise HTTPException(status_code=404, detail="Персонаж не найден")
+    
+    await db.delete(character)
+    await db.commit()
+
+
+@router.delete("/{character_id}/attacks/{attack_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_attack(
+    character_id: int,
+    attack_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    char_stmt = select(Character.id).where(Character.id == character_id, Character.owner_id == current_user.id)
+    char_result = await db.execute(char_stmt)
+    if not char_result.scalar_one_or_none():
+         raise HTTPException(status_code=404, detail="Персонаж не найден")
+
+    stmt = delete(Attack).where(Attack.id == attack_id, Attack.character_id == character_id)
+    await db.execute(stmt)
+    await db.commit()
+    return None
+
+
+@router.delete("/{character_id}/spells/{spell_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_spell(
+    character_id: int,
+    spell_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    stmt = select(Spell).join(Character).where(
+        Spell.id == spell_id,
+        Spell.character_id == character_id,
+        Character.owner_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    spell = result.scalar_one_or_none()
+    
+    if not spell:
+        raise HTTPException(status_code=404, detail="Заклинание не найдено")
+    
+    await db.delete(spell)
+    await db.commit()
+
+
+@router.post("/{character_id}/features", response_model=FeatureResponse)
+async def add_feature_to_character(
+    character_id: int,
+    feature_in: FeatureCreate,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(select(Character).where(Character.id == character_id, Character.owner_id == current_user.id))
+    character = result.scalar_one_or_none()
+    if not character:
+        raise HTTPException(status_code=404, detail="Персонаж не найден")
+
+    new_feature = Feature(**feature_in.model_dump(), character_id=character.id)
+    db.add(new_feature)
+    await db.commit()
+    await db.refresh(new_feature)
+    return new_feature
+
+@router.delete("/{character_id}/features/{feature_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_feature(
+    character_id: int,
+    feature_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    char_result = await db.execute(select(Character.id).where(Character.id == character_id, Character.owner_id == current_user.id))
+    if not char_result.scalar_one_or_none():
+         raise HTTPException(status_code=404, detail="Персонаж не найден")
+
+    await db.execute(delete(Feature).where(Feature.id == feature_id, Feature.character_id == character_id))
+    await db.commit()
+    return None
+
+@router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_character(
+    character_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    result = await db.execute(select(Character).where(Character.id == character_id, Character.owner_id == current_user.id))
+    character = result.scalar_one_or_none()
+    
+    if not character:
+        raise HTTPException(status_code=404, detail="Персонаж не найден")
+
+    await db.execute(delete(Character).where(Character.id == character_id))
+    await db.commit()
+    return None
