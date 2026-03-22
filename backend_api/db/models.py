@@ -32,6 +32,11 @@ class Spell(Base):
     level: Mapped[int] = mapped_column(default=0)
     description: Mapped[str] = mapped_column(String, nullable=True)
     
+    requires_attack_roll: Mapped[bool] = mapped_column(default=False, server_default="false") 
+    spell_attack_bonus: Mapped[int] = mapped_column(default=0, server_default="0")
+    damage_dice: Mapped[str] = mapped_column(String(20), nullable=True) 
+    damage_type: Mapped[str] = mapped_column(String(50), nullable=True)
+    
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     character: Mapped["Character"] = relationship(back_populates="spells")
 

@@ -38,13 +38,31 @@ class SpellBase(BaseModel):
     level: int = 0
     description: Optional[str] = None
 
-class SpellCreate(SpellBase):
-    pass
+class SpellCreate(BaseModel):
+    name: str
+    level: int = 0
+    description: Optional[str] = None
+    
+    requires_attack_roll: bool = False
+    spell_attack_bonus: int = 0
+    damage_dice: Optional[str] = None
+    damage_type: Optional[str] = None
 
-class SpellResponse(SpellBase):
+class SpellResponse(BaseModel):
     id: int
+    name: str
+    level: int
+    description: Optional[str] = None
+    
+    requires_attack_roll: bool
+    spell_attack_bonus: int
+    damage_dice: Optional[str]
+    damage_type: Optional[str]
+    
     character_id: int
-    model_config = ConfigDict(from_attributes=True)
+
+    class Config:
+        from_attributes = True
 
 class CharacterBase(BaseModel):
     name: str

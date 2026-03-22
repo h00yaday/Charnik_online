@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, delete, update
 from sqlalchemy.orm import selectinload
 import random 
 from core.dice import parse_and_roll 
@@ -146,6 +146,56 @@ async def roll_character_attack(
             "type": attack.damage_type
         }
     }
+@router.post("/{character_id}/spells/{spell_id}/roll")
+async def roll_character_spell(
+    character_id: int,
+    spell_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    stmt = select(Spell).join(Character).where(
+        Spell.id == spell_id,
+        Spell.character_id == character_id,
+        Character.owner_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    spell = result.scalar_one_or_none()
+    
+    if not spell:
+        raise HTTPException(status_code=404, detail="Заклинание не найдено или у вас нет к нему доступа")
+
+    response_data = {
+        "action": f"Каст: {spell.name}"
+    }
+
+    if getattr(spell, 'requires_attack_roll', False):
+        d20_roll = random.randint(1, 20)
+        bonus = getattr(spell, 'spell_attack_bonus', 0)
+        response_data["hit_roll"] = {
+            "d20_face": d20_roll,
+            "bonus": bonus,
+            "total": d20_roll + bonus,
+            "is_critical": d20_roll == 20,
+            "is_critical_fail": d20_roll == 1
+        }
+
+    damage_dice = getattr(spell, 'damage_dice', None)
+    if damage_dice:
+        try:
+            damage_result = parse_and_roll(damage_dice)
+            response_data["damage"] = {
+                "total": damage_result["total"],
+                "dice_rolls": damage_result["rolls_detail"], 
+                "modifier": damage_result["modifier"],
+                "type": getattr(spell, 'damage_type', "Магический")
+            }
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Ошибка в формуле кубиков урона: {e}")
+
+    if not getattr(spell, 'requires_attack_roll', False) and not damage_dice:
+        response_data["effect"] = "Заклинание применено (без бросков урона/попадания)"
+
+    return response_data
 
 @router.patch("/{character_id}", response_model=CharacterResponse)
 async def update_character(
@@ -205,6 +255,76 @@ async def delete_attack(
     await db.execute(stmt)
     await db.commit()
     return None
+
+@router.post("/{character_id}/spells/{spell_id}/cast")
+async def cast_spell(
+    character_id: int,
+    spell_id: int,
+    cast_level: int = None, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    stmt = select(Spell).join(Character).where(
+        Spell.id == spell_id,
+        Spell.character_id == character_id,
+        Character.owner_id == current_user.id
+    )
+    result = await db.execute(stmt)
+    spell = result.scalar_one_or_none()
+    
+    if not spell:
+        raise HTTPException(status_code=404, detail="Заклинание не найдено")
+
+    char_result = await db.execute(select(Character).where(Character.id == character_id))
+    character = char_result.scalar_one()
+
+    actual_cast_level = cast_level if cast_level is not None else spell.level
+
+    if actual_cast_level > 0:
+        level_key = str(actual_cast_level)
+        slots = character.spell_slots or {}
+        
+        slot_data = slots.get(level_key, {"total": 0, "used": 0})
+        
+        if slot_data["total"] - slot_data["used"] <= 0:
+            raise HTTPException(status_code=400, detail=f"Нет доступных ячеек {actual_cast_level} уровня!")
+
+        slot_data["used"] += 1
+        slots[level_key] = slot_data
+
+        character.spell_slots = slots
+
+        db.add(character)
+
+    response_data = {
+        "action": f"Каст заклинания: {spell.name} (Уровень {actual_cast_level})",
+        "spell_slots_remaining": slots[level_key]["total"] - slots[level_key]["used"] if actual_cast_level > 0 else "Бесконечно (заговор)"
+    }
+
+    if spell.requires_attack_roll:
+        d20_roll = random.randint(1, 20)
+        response_data["hit_roll"] = {
+            "d20_face": d20_roll,
+            "bonus": spell.spell_attack_bonus,
+            "total": d20_roll + spell.spell_attack_bonus,
+            "is_critical": d20_roll == 20,
+            "is_critical_fail": d20_roll == 1
+        }
+
+    if spell.damage_dice:
+        try:
+            damage_result = parse_and_roll(spell.damage_dice) 
+            response_data["damage"] = {
+                "total": damage_result["total"],
+                "dice_rolls": damage_result["rolls_detail"], 
+                "modifier": damage_result["modifier"],
+                "type": spell.damage_type
+            }
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Ошибка в формуле кубиков урона: {e}")
+
+    await db.commit()
+    return response_data
 
 
 @router.delete("/{character_id}/spells/{spell_id}", status_code=status.HTTP_204_NO_CONTENT)

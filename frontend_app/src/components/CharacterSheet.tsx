@@ -61,7 +61,10 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
 
   // D&D Математика
   const getModifier = (score: number) => Math.floor((score - 10) / 2);
-  const formatMod = (mod: number) => (mod >= 0 ? `+${mod}` : mod.toString());
+  const formatMod = (mod?: number | null) => {
+  if (mod === undefined || mod === null || isNaN(mod)) return "+0";
+  return mod >= 0 ? `+${mod}` : mod.toString();
+  };
   const profBonus = Math.ceil(localChar.level / 4) + 1;
 
   // --- API ФУНКЦИИ (Сохранение статов) ---
@@ -90,6 +93,12 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
     setIsRolling(true);
     try {
       const response = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      
+      if (response.status === 401) {
+          alert('Время сессии истекло. Пожалуйста, войдите снова.');
+          return;
+      }
+
       if (!response.ok) throw new Error('Ошибка броска');
       setRollResult(await response.json());
     } catch (err) {
@@ -384,14 +393,14 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
               <div className="bg-slate-950/50 rounded-2xl p-4 border border-slate-700/50 text-center">
                 <p className="text-xs text-slate-500 uppercase font-bold mb-1">Попадание</p>
                 <div className="text-4xl font-black mb-1">
-                  <span className={rollResult.hit_roll.is_critical ? "text-amber-400" : rollResult.hit_roll.is_critical_fail ? "text-red-500" : "text-slate-200"}>
-                    {rollResult.hit_roll.d20_face}
+                  <span className={rollResult.hit_roll?.is_critical ? "text-amber-400" : rollResult.hit_roll?.is_critical_fail ? "text-red-500" : "text-slate-200"}>
+                    {rollResult.hit_roll?.d20_face}
                   </span>
-                  <span className="text-xl text-slate-600 mx-2">{formatMod(rollResult.hit_roll.bonus)}</span>
-                  <span className="text-3xl text-blue-400">= {rollResult.hit_roll.total}</span>
+                  <span className="text-xl text-slate-600 mx-2">{formatMod(rollResult.hit_roll?.bonus)}</span>
+                  <span className="text-3xl text-blue-400">= {rollResult.hit_roll?.total}</span>
                 </div>
-                {rollResult.hit_roll.is_critical && <span className="text-xs font-bold text-amber-400 animate-pulse">КРИТИЧЕСКОЕ ПОПАДАНИЕ!</span>}
-                {rollResult.hit_roll.is_critical_fail && <span className="text-xs font-bold text-red-500">КРИТИЧЕСКИЙ ПРОМАХ!</span>}
+                {rollResult.hit_roll?.is_critical && <span className="text-xs font-bold text-amber-400 animate-pulse">КРИТИЧЕСКОЕ ПОПАДАНИЕ!</span>}
+                {rollResult.hit_roll?.is_critical_fail && <span className="text-xs font-bold text-red-500">КРИТИЧЕСКИЙ ПРОМАХ!</span>}
               </div>
 
               {rollResult.damage && (
