@@ -1,51 +1,55 @@
-# 🐉 Таверна "У Эсмеральды" — D&D 5e Character Manager
+# D&D 2024 Portable Character Sheet & Dice Roller
 
-Многопользовательское Fullstack-приложение для создания, хранения и управления персонажами Dungeons & Dragons (5-я редакция). Проект позволяет мастерам и игрокам автоматизировать броски кубиков, отслеживать здоровье и управлять книгой заклинаний.
+A lightweight, portable, full-stack web application designed to serve as a digital character sheet and automated dice roller, built specifically for the **Dungeons & Dragons 2024 Edition** ruleset.
 
-## 🛠 Технологический стек
+## 🚀 Overview
 
-* **Backend:** Python, FastAPI, SQLAlchemy, PostgreSQL, Alembic (миграции).
-* **Frontend:** React, TypeScript, Vite, Tailwind CSS.
-* **Инфраструктура:** Docker, Docker Compose.
-* **Авторизация:** JWT (JSON Web Tokens).
+This project was developed to streamline the tabletop RPG experience. It replaces bulky paper sheets with a responsive digital interface, allowing players to manage their characters, track their stats, and perform complex dice rolls instantly.
 
----
+### Key Features
 
-## 🚀 Что уже реализовано (V 1.0)
+* **D&D 2024 Ruleset Compliance:** Tailored to support the updated mechanics, revamped ability checks, and new character creation rules introduced in the 2024 edition.
+* **Digital Character Management:** Full CRUD operations for character sheets. Easily create, update, and store your character's stats, HP, and inventory securely.
+* **Integrated Dice Roller:** A built-in rolling engine that parses standard D&D dice notation (e.g., `1d20+5`, `8d6`) and calculates results instantly for attacks, damage, and saving throws.
+* **Portable & Dockerized:** The entire application is containerized, making it incredibly easy to spin up locally or deploy to a VPS so your entire party can access it at the table.
 
-### 🛡️ Управление персонажами
+## 🛠 Tech Stack
 
-- [X]  **Создание героев:** Выбор расы, класса, предыстории и генерация базовых характеристик (СИЛ, ЛОВ, ТЕЛ, ИНТ, МУД, ХАР).
-- [X]  **Динамический чарник:** Интерфейс с вкладками (Характеристики, Бой, Заклинания, Особенности).
-- [X]  **Навыки:** Полный список из 18 навыков D&D с автоматическим расчетом модификаторов и бонуса мастерства в зависимости от уровня.
-- [X]  **Боевая система:** Отслеживание текущих/максимальных Хитпоинтов и Класса Доспеха (КД).
+This project uses a modern, asynchronous architecture:
 
-### ⚔️ Интерактив и Броски
+* **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
+* **Backend:** Python 3.11, FastAPI, SQLAlchemy (ORM), Alembic (Migrations)
+* **Database:** PostgreSQL
+* **DevOps & Infrastructure:** Docker, Docker Compose
 
-- [X]  **Система бросков (Dice Roller):** Серверная обработка бросков кубиков (например, `1d20 + 3`, `8d6`) с парсингом формул.
-- [X]  **Оружие и Атаки:** Возможность экипировать оружие и совершать броски на попадание и урон "в один клик".
-- [X]  **Магия:** Книга заклинаний с описаниями, уровнями и возможностью кастовать атакующие спеллы.
-- [X]  **Красивый UI бросков:** Всплывающие модальные окна с результатами (подсветка критических попаданий и промахов).
+## 📂 Project Structure
 
----
+* `/frontend_app` — The React user interface, featuring interactive character sheets (`CharacterSheet.tsx`) and forms.
+* `/backend_api` — The FastAPI server handling the business logic, dice rolling mechanics (`roller.py`), and character database endpoints.
+* `docker-compose.yml` — Orchestration file for easy multi-container deployment.
 
-## 🗺️ Дорожная карта (Roadmap) / Что дальше?
+## 🔮 Future Improvements (Roadmap)
 
-### 🎮 Расширение D&D Механик
+The application is actively evolving. Here are some of the key features planned for upcoming releases:
 
-- [ ]  **Трекер ячеек заклинаний:** Визуальное отображение доступных слотов магии на каждый уровень и возможность их тратить.
-- [ ]  **Система отдыха:** Кнопки "Короткий отдых" (трата костей хитов) и "Длинный отдых" (восстановление ХП и ячеек заклинаний).
-- [ ]  **Инвентарь и Золото:** Отслеживание веса снаряжения, платиновых, золотых, серебряных и медных монет.
-- [ ]  **Повышение уровня:** Автоматическое добавление классовых умений при левелапе.
+* **Public Web Release:** The ultimate goal is to deploy the application to the cloud, making it publicly accessible for the tabletop RPG community to use online without requiring local installation.
+* **Session Rooms & Dungeon Master Dashboard:** Introducing dedicated multiplayer "rooms" where a Dungeon Master can invite players, monitor their live character sheets, track initiative, and make secret rolls behind the virtual screen.
+* **Real-Time Party Synchronization:** Implementing WebSockets so that HP updates, active conditions, and dice rolls are instantly broadcasted live to everyone in the session room.
+* **Advanced Spellcasting & Magic Management:** A dedicated interface to track spell slots, prepare daily spells, and manage custom spellbooks (e.g., quickly pulling up specific spell lists and save DCs).
+* **Inventory & Encumbrance Tracking:** Automated weight calculation for carried items, weapons, and treasure based on the 2024 revised strength and capacity rules.
+* **Custom Roll Macros & Homebrew Support:** Giving users the ability to save frequently used complex rolls (like specific weapon mastery properties) and toggle optional homebrew mechanics.
+* **Dark Mode & Mobile Optimization:** Enhancing the UI to be perfectly suited for late-night gaming sessions and seamless one-handed use on smartphones.
 
-### ⚙️ Инфраструктура и DevOps
+## ⚙️ Getting Started
 
-- [ ]  **Reverse Proxy:** Добавление Nginx для маршрутизации запросов к фронтенду и API через единый порт.
-- [ ]  **CI/CD Пайплайны:** Настройка автоматического тестирования и линтинга (GitHub Actions / GitLab CI) при пуше в `main`.
-- [ ]  **Авто-миграции:** Настройка скрипта `entrypoint.sh` для бэкенда, чтобы `alembic upgrade head` выполнялся автоматически при старте контейнера.
-- [ ]  **Кэширование:** Интеграция Redis для быстрого доступа к справочникам (описания стандартных заклинаний и правил).
+### Prerequisites
 
-### 🎨 Улучшения Интерфейса
+Make sure you have [Docker](https://www.docker.com/) and Docker Compose installed on your system.
 
-- [ ]  **Темная/Светлая тема:** Переключатель режимов.
-- [ ]  **Аватарки:** Возможность загружать портреты персонажей (интеграция с S3 или локальным хранилищем).
+### Installation & Running
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/h00yaday/Charnik_online.git
+   cd Charnik_online
+   ```
