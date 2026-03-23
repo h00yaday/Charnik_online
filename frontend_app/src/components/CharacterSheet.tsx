@@ -37,6 +37,14 @@ const SKILLS = [
   { id: 'stealth', name: 'Скрытность', stat: 'dexterity' },
   { id: 'survival', name: 'Выживание', stat: 'wisdom' },
 ];
+const STATS = [
+  { id: 'strength', name: 'Сила' },
+  { id: 'dexterity', name: 'Ловкость' },
+  { id: 'constitution', name: 'Телосложение' },
+  { id: 'intelligence', name: 'Интеллект' },
+  { id: 'wisdom', name: 'Мудрость' },
+  { id: 'charisma', name: 'Харизма' }
+];
 
 export default function CharacterSheet({ character, token, onBack }: Props) {
   const [localChar, setLocalChar] = useState<Character>({
@@ -76,7 +84,12 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
       body: JSON.stringify({ [field]: value }),
     }).catch(() => console.error('Ошибка сохранения'));
   };
-
+  const toggleSavingThrow = (statId: string) => {
+    // Для спасбросков владение обычно либо есть (1), либо нет (0)
+    const current = localChar.saving_throws[statId] || 0;
+    const next = current === 0 ? 1 : 0;
+    updateField('saving_throws', { ...localChar.saving_throws, [statId]: next });
+  };
   const toggleSkill = (skillId: string) => {
     const current = localChar.skills[skillId] || 0;
     const next = current === 0 ? 1 : current === 1 ? 2 : 0;
@@ -260,11 +273,35 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
             </div>
 
             <div className="md:col-span-4 space-y-6">
-               <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-lg">
-                  <h3 className="text-lg font-bold text-slate-300 mb-4 border-b border-slate-700 pb-2">Спасброски</h3>
-                  <p className="text-sm text-slate-500 italic">Спасброски настраиваются аналогично навыкам...</p>
-               </div>
+              <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-lg">
+                <h3 className="text-lg font-bold text-slate-300 mb-4 border-b border-slate-700 pb-2">Спасброски</h3>
+                <div className="space-y-1">
+                  {STATS.map(stat => {
+                  const statScore = localChar[stat.id as keyof Character] as number;
+                  const profLevel = localChar.saving_throws[stat.id] || 0;
+                  const totalBonus = getModifier(statScore) + (profLevel * profBonus);
+          
+                  return (
+                    <div 
+                      key={stat.id} 
+                      onClick={() => toggleSavingThrow(stat.id)} 
+                      className="flex items-center justify-between p-2 hover:bg-slate-700/50 rounded cursor-pointer transition-colors group"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className={`w-4 h-4 rounded-full border-2 flex items-center justify-center ${profLevel > 0 ? 'border-amber-400 bg-amber-400/20' : 'border-slate-600 bg-slate-900'}`}>
+                          {profLevel > 0 && <div className="w-2 h-2 bg-amber-400 rounded-full shadow-[0_0_5px_#fbbf24]" />}
+                        </div>
+                        <span className={`text-sm ${profLevel > 0 ? 'text-slate-200 font-bold' : 'text-slate-400'}`}>{stat.name}</span>
+                      </div>
+                      <span className={`font-mono text-sm ${profLevel > 0 ? 'text-amber-400 font-bold' : 'text-slate-500'}`}>
+                        {formatMod(totalBonus)}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
+          </div>
           </div>
         )}
 
@@ -319,8 +356,8 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
                 {localChar.attacks.length === 0 && <p className="text-slate-500 italic">Оружие не экипировано</p>}
               </div>
             </div>
-          </div>
-        )}
+      </div>
+      )}
 
         {/* ВКЛАДКА 3: ЗАКЛИНАНИЯ */}
         {activeTab === 'spells' && (
