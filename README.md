@@ -39,6 +39,20 @@ The application is actively evolving. Here are some of the key features planned 
 * **Inventory & Encumbrance Tracking:** Automated weight calculation for carried items, weapons, and treasure based on the 2024 revised strength and capacity rules.
 * **Custom Roll Macros & Homebrew Support:** Giving users the ability to save frequently used complex rolls (like specific weapon mastery properties) and toggle optional homebrew mechanics.
 * **Dark Mode & Mobile Optimization:** Enhancing the UI to be perfectly suited for late-night gaming sessions and seamless one-handed use on smartphones.
+*
+
+## 🎯 Current Focus (Next Steps)
+
+The frontend has been successfully decomposed. The following are the priority tasks for development:
+
+1. **Magic: Spell Slots Tracker**
+
+   * *Task:* Develop a UI in `SpellsTab.tsx` to display spell slots by level (1 through 9).
+   * *Feature:* Allow players to click and mark spent slots during combat (utilizing the existing `spell_slots` field in the database) and restore them upon taking a rest.
+2. **Equipment: Inventory & Encumbrance**
+
+   * *Task:* Add a new tab or expand `CombatTab.tsx` to track standard items.
+   * *Feature:* Implement CRUD operations for backpack items (potions, gold, torches) and an automatic weight/encumbrance calculation based on the 2024 D&D rules using the character's Strength score.
 
 ## ⚙️ Getting Started
 
