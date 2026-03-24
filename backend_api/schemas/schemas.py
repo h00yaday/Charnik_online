@@ -110,6 +110,13 @@ class CharacterUpdate(BaseModel):
     saving_throws: Optional[Dict[str, int]] = None
     spell_slots: Optional[Dict[str, int]] = None
 
+    strength: Optional[int] = None
+    dexterity: Optional[int] = None
+    constitution: Optional[int] = None
+    intelligence: Optional[int] = None
+    wisdom: Optional[int] = None
+    charisma: Optional[int] = None
+    
 class UserCreate(BaseModel):
     username: str
     password: str = Field(min_length=3, max_length=72)

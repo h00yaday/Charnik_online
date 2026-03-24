@@ -183,7 +183,13 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
       {/* ТЕЛО ЧАРНИКА */}
       <div className="max-w-6xl mx-auto px-4 mt-6">
         {activeTab === 'stats' && (
-          <StatsTab character={localChar} profBonus={profBonus} onToggleSkill={toggleSkill} onToggleSave={toggleSavingThrow} />
+          <StatsTab 
+            character={localChar} 
+            profBonus={profBonus} 
+            onToggleSkill={toggleSkill} 
+            onToggleSave={toggleSavingThrow} 
+            onUpdateStat={(statId, value) => updateField(statId, Math.max(1, Math.min(30, value)))}
+          />
         )}
         {activeTab === 'combat' && (
           <CombatTab character={localChar} isRolling={isRolling} onUpdateHp={updateHP} onRoll={handleRoll} onAddAttack={() => setShowAttackForm(true)} onDeleteAttack={(id) => deleteItem('attacks', id)} />
