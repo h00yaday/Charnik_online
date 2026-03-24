@@ -6,7 +6,6 @@ import CharacterForm from './components/CharacterForm';
 interface Props {
   characters: Character[];
   loading: boolean;
-  token: string;
   onSelectCharacter: (char: Character) => void;
   onDeleteCharacter: (e: React.MouseEvent, id: number) => void;
   onLogout: () => void;
@@ -14,7 +13,7 @@ interface Props {
 }
 
 export default function Tavern({ 
-  characters, loading, token, onSelectCharacter, onDeleteCharacter, onLogout, onRefresh 
+  characters, loading, onSelectCharacter, onDeleteCharacter, onLogout, onRefresh 
 }: Props) {
   const [showForm, setShowForm] = useState(false);
 
@@ -41,10 +40,8 @@ export default function Tavern({
       <main className="max-w-6xl mx-auto">
         {showForm && (
           <CharacterForm 
-            token={token} 
             onCancel={() => setShowForm(false)} 
             onSuccess={() => { setShowForm(false); onRefresh(); }} 
-            onLogout={onLogout}
           />
         )}
 

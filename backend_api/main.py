@@ -13,6 +13,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="D&D Manager API", lifespan=lifespan)
 
+@app.on_event("startup")
+async def init_tables():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173"],

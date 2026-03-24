@@ -1,13 +1,12 @@
 import { useState } from 'react';
+import { fetchWithAuth } from '../../../utils/api';
 
 interface CharacterFormProps {
-  token: string;
   onCancel: () => void;
   onSuccess: () => void;
-  onLogout: () => void; // Добавили сюда
 }
 
-export default function CharacterForm({ token, onCancel, onSuccess, onLogout }: CharacterFormProps) {
+export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProps) {
   const [form, setForm] = useState({
     name: '',
     race: 'Человек',
@@ -30,28 +29,21 @@ export default function CharacterForm({ token, onCancel, onSuccess, onLogout }: 
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/characters/', {
+      const response = await fetchWithAuth('http://localhost:8000/characters/', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
         body: JSON.stringify(form)
       });
-      
-      // Наша ловушка для истекшего токена
-      if (res.status === 401) {
-        onLogout();
-        throw new Error('Время сессии истекло');
+
+      if (response.ok) {
+        onSuccess();
+      } else {
+        const errorData = await response.json();
+        alert(errorData.detail || 'Ошибка создания персонажа');
       }
-      
-      if (!res.ok) throw new Error('Ошибка при создании персонажа');
-      onSuccess();
     } catch (err: any) {
       console.error(err);
-      // Если это ошибка сессии, не показываем страшный алерт, нас и так выкинет на экран входа
-      if (!err.message.includes('сессии')) {
-        alert('Не удалось создать персонажа. Проверьте подключение.');
+      if (err.message !== 'Unauthorized') {
+        alert('Не удалось подключиться к серверу');
       }
     } finally {
       setLoading(false);

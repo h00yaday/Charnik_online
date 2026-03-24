@@ -41,7 +41,13 @@ The application is actively evolving. Here are some of the key features planned 
 * **Dark Mode & Mobile Optimization:** Enhancing the UI to be perfectly suited for late-night gaming sessions and seamless one-handed use on smartphones.
 *
 
-## 🎯 Current Focus (Next Steps)
+## 🗺️ Development Plan (To-Do / Roadmap)
+
+Next steps to improve the Character Sheet functionality:
+
+- [ ]  **Backpack / Inventory:** Implement a system for adding and managing items, tracking quantities, and potentially calculating equipment weight.
+- [ ]  **Smart Combat Panel:** Combine weapon attacks and combat spells into a single, unified interface so everything you need in the heat of battle is right at your fingertips.
+- [ ]  **Stat Rolls:** Add the ability to click directly on core stats (Strength, Dexterity, etc.) and saving throws to automatically trigger and roll checks.
 
 The frontend has been successfully decomposed. The following are the priority tasks for development:
 

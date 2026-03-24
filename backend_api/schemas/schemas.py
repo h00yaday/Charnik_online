@@ -85,7 +85,7 @@ class CharacterBase(BaseModel):
     speed: int = 30
     initiative_bonus: int = 0
 
-    spell_slots: Dict[str, int] = Field(default_factory=dict)
+    spell_slots: Dict[str, Dict[str, int]] = Field(default_factory=dict) 
     skills: Dict[str, int] = Field(default_factory=dict) 
     saving_throws: Dict[str, int] = Field(default_factory=dict)
 
@@ -108,7 +108,7 @@ class CharacterUpdate(BaseModel):
     level: Optional[int] = None
     skills: Optional[Dict[str, int]] = None
     saving_throws: Optional[Dict[str, int]] = None
-    spell_slots: Optional[Dict[str, int]] = None
+    spell_slots: Optional[Dict[str, Dict[str, int]]] = None
 
     strength: Optional[int] = None
     dexterity: Optional[int] = None
@@ -116,7 +116,7 @@ class CharacterUpdate(BaseModel):
     intelligence: Optional[int] = None
     wisdom: Optional[int] = None
     charisma: Optional[int] = None
-    
+
 class UserCreate(BaseModel):
     username: str
     password: str = Field(min_length=3, max_length=72)

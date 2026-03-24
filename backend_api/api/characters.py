@@ -2,10 +2,11 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, delete, update
 from sqlalchemy.orm import selectinload
+from sqlalchemy.orm.attributes import flag_modified # <-- ДОБАВИЛИ ДЛЯ ЯЧЕЕК
 import random 
 from core.dice import parse_and_roll 
 from db.database import get_db
-from db.models import Character, User, Attack, Spell
+from db.models import Character, User, Attack, Spell, Feature # <-- ДОБАВИЛИ FEATURE
 from api.dependencies import get_current_user
 from schemas.schemas import (
     CharacterCreate, CharacterResponse, CharacterUpdate,
@@ -39,7 +40,6 @@ async def create_character(
 
     return character_with_relations
 
-
 @router.get("/", response_model=list[CharacterResponse])
 async def get_characters(
     db: AsyncSession = Depends(get_db),
@@ -53,8 +53,6 @@ async def get_characters(
     result = await db.execute(stmt)
     characters = result.scalars().all()
     return characters
-
-
 
 @router.post("/{character_id}/attacks", response_model=AttackResponse)
 async def add_attack_to_character(
@@ -77,7 +75,6 @@ async def add_attack_to_character(
     await db.refresh(new_attack)
     
     return new_attack
-
 
 @router.post("/{character_id}/spells", response_model=SpellResponse)
 async def add_spell_to_character(
@@ -146,6 +143,7 @@ async def roll_character_attack(
             "type": attack.damage_type
         }
     }
+
 @router.post("/{character_id}/spells/{spell_id}/roll")
 async def roll_character_spell(
     character_id: int,
@@ -219,6 +217,14 @@ async def update_character(
     for key, value in update_data.items():
         setattr(character, key, value)
 
+    # Принудительно говорим алхимии, что мы изменили JSON словари
+    if "spell_slots" in update_data:
+        flag_modified(character, "spell_slots")
+    if "skills" in update_data:
+        flag_modified(character, "skills")
+    if "saving_throws" in update_data:
+        flag_modified(character, "saving_throws")
+
     await db.commit()
     await db.refresh(character)
     return character
@@ -237,7 +243,6 @@ async def delete_character(
     
     await db.delete(character)
     await db.commit()
-
 
 @router.delete("/{character_id}/attacks/{attack_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_attack(
@@ -293,6 +298,7 @@ async def cast_spell(
         slots[level_key] = slot_data
 
         character.spell_slots = slots
+        flag_modified(character, "spell_slots") # <-- ВОТ ОНА, МАГИЯ СОХРАНЕНИЯ
 
         db.add(character)
 
@@ -326,7 +332,6 @@ async def cast_spell(
     await db.commit()
     return response_data
 
-
 @router.delete("/{character_id}/spells/{spell_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_spell(
     character_id: int,
@@ -347,7 +352,6 @@ async def delete_spell(
     
     await db.delete(spell)
     await db.commit()
-
 
 @router.post("/{character_id}/features", response_model=FeatureResponse)
 async def add_feature_to_character(
@@ -379,21 +383,5 @@ async def delete_feature(
          raise HTTPException(status_code=404, detail="Персонаж не найден")
 
     await db.execute(delete(Feature).where(Feature.id == feature_id, Feature.character_id == character_id))
-    await db.commit()
-    return None
-
-@router.delete("/{character_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_character(
-    character_id: int,
-    db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
-):
-    result = await db.execute(select(Character).where(Character.id == character_id, Character.owner_id == current_user.id))
-    character = result.scalar_one_or_none()
-    
-    if not character:
-        raise HTTPException(status_code=404, detail="Персонаж не найден")
-
-    await db.execute(delete(Character).where(Character.id == character_id))
     await db.commit()
     return None

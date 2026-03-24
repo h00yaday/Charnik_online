@@ -42,7 +42,8 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
         
         {/* ЛЕВЫЙ БЛОК: Характеристики и Спасброски (без изменений) */}
         <div className="lg:col-span-5 grid grid-cols-2 gap-4">
-          {['strength', 'dexterity', 'constitution', 'intelligence', 'wisdom', 'charisma'].map(statId => {
+          {STATS.map(stat => {
+            const statId = stat.id;
             const score = character[statId as keyof Character] as number;
             const mod = getModifier(score);
             const statLabel = STAT_LABELS_SHORT[statId];
