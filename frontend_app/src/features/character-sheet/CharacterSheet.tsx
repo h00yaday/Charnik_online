@@ -116,6 +116,51 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
     } catch (err) { alert('Ошибка удаления'); }
   };
 
+  const updateSpellSlot = (level: number, total: number, used: number) => {
+    const newSlots = { ...localChar.spell_slots, [level]: { total, used } };
+    updateField('spell_slots', newSlots);
+  };
+
+  const handleCastSpell = async (spellId: number, castLevel: number) => {
+    setIsRolling(true);
+    try {
+      const url = `http://localhost:8000/characters/${localChar.id}/spells/${spellId}/cast?cast_level=${castLevel}`;
+      const response = await fetch(url, { method: 'POST', headers: { 'Authorization': `Bearer ${token}` } });
+      
+      if (response.status === 401) {
+          alert('Время сессии истекло. Пожалуйста, войдите снова.');
+          return;
+      }
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        alert(data.detail || 'Ошибка каста');
+        return;
+      }
+
+      setRollResult(data);
+
+      // Локально обновляем ячейки, если заклинание не является заговором (уровень > 0), 
+      // чтобы интерфейс сразу отреагировал, так как бекенд уже списал ячейку.
+      if (castLevel > 0) {
+        setLocalChar(prev => {
+          const currentSlots = prev.spell_slots[castLevel] || { total: 0, used: 0 };
+          return {
+            ...prev,
+            spell_slots: {
+              ...prev.spell_slots,
+              [castLevel]: { ...currentSlots, used: currentSlots.used + 1 }
+            }
+          };
+        });
+      }
+    } catch (err) {
+      alert('Не удалось скастовать заклинание :(');
+    } finally {
+      setIsRolling(false);
+    }
+  };
   return (
     <div className="bg-slate-950 min-h-screen text-slate-200 animate-fade-in pb-10 font-sans relative">
       
@@ -144,7 +189,14 @@ export default function CharacterSheet({ character, token, onBack }: Props) {
           <CombatTab character={localChar} isRolling={isRolling} onUpdateHp={updateHP} onRoll={handleRoll} onAddAttack={() => setShowAttackForm(true)} onDeleteAttack={(id) => deleteItem('attacks', id)} />
         )}
         {activeTab === 'spells' && (
-          <SpellsTab character={localChar} isRolling={isRolling} onAddSpell={() => setShowSpellForm(true)} onDeleteSpell={(id) => deleteItem('spells', id)} onRoll={handleRoll} />
+          <SpellsTab 
+          character={localChar} 
+          isRolling={isRolling} 
+          onAddSpell={() => setShowSpellForm(true)} 
+          onDeleteSpell={(id) => deleteItem('spells', id)} 
+          onCast={handleCastSpell}
+          onUpdateSlots={updateSpellSlot}
+          />
         )}
         {activeTab === 'features' && (
           <FeaturesTab character={localChar} />

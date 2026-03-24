@@ -43,7 +43,7 @@ export interface Character {
   charisma: number;
   skills: Record<string, number>; 
   saving_throws: Record<string, number>; 
-  spell_slots: Record<string, number>;
+  spell_slots: Record<string, { total: number; used: number }>;
   attacks: Attack[]; 
   spells: Spell[]; 
   features: Feature[];
