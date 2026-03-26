@@ -1,61 +1,53 @@
 # D&D 2024 Portable Character Sheet & Dice Roller
 
-A lightweight, portable, full-stack web application designed to serve as a digital character sheet and automated dice roller, built specifically for the **Dungeons & Dragons 2024 Edition** ruleset.
+A lightweight, portable, full-stack web application designed to serve as an interactive digital character sheet and automated dice roller, built specifically for the **Dungeons & Dragons 2024 Edition** ruleset.
 
 ## 🚀 Overview
 
-This project was developed to streamline the tabletop RPG experience. It replaces bulky paper sheets with a responsive digital interface, allowing players to manage their characters, track their stats, and perform complex dice rolls instantly.
+This project streamlines the tabletop RPG experience by replacing bulky paper sheets with a highly responsive digital interface. It allows players to manage their characters, track their health and spell slots, and perform complex dice rolls instantly with a single click.
 
-### Key Features
+### ✨ Key Features
 
-* **D&D 2024 Ruleset Compliance:** Tailored to support the updated mechanics, revamped ability checks, and new character creation rules introduced in the 2024 edition.
-* **Digital Character Management:** Full CRUD operations for character sheets. Easily create, update, and store your character's stats, HP, and inventory securely.
-* **Integrated Dice Roller:** A built-in rolling engine that parses standard D&D dice notation (e.g., `1d20+5`, `8d6`) and calculates results instantly for attacks, damage, and saving throws.
-* **Portable & Dockerized:** The entire application is containerized, making it incredibly easy to spin up locally or deploy to a VPS so your entire party can access it at the table.
+* **D&D 2024 Ruleset Compliance:** Tailored to support updated mechanics, revamped ability checks, and new character rules introduced in the 2024 edition.
+* **Interactive Digital Sheet:** Full CRUD operations for character stats. Dynamically calculates your Proficiency Bonus and Initiative based on your character's level and Dexterity.
+* **Universal Click-to-Roll Engine:** Click directly on stats, saving throws, skills, weapons, or spells to automatically trigger a d20 roll with all your modifiers applied. Parses standard D&D dice notation (e.g., `1d20+5`, `8d6`) and calculates hits, criticals, and damage instantly.
+* **Advanced Magic Management:** Dedicated spellbook interface. Track spell slots by level, mark them as used during combat, and cast spells that automatically handle spell attack rolls and damage output.
+* **Rest & Health Tracking:** Manage your HP pool dynamically and restore your health and spell slots instantly using the built-in Short and Long Rest mechanics.
+* **Portable & Dockerized:** Containerized architecture makes it incredibly easy to spin up locally or deploy to a VPS so your entire party can access it at the table.
 
 ## 🛠 Tech Stack
 
-This project uses a modern, asynchronous architecture:
+Built with a modern, asynchronous architecture:
 
 * **Frontend:** React 18, TypeScript, Vite, Tailwind CSS
 * **Backend:** Python 3.11, FastAPI, SQLAlchemy (ORM), Alembic (Migrations)
 * **Database:** PostgreSQL
-* **DevOps & Infrastructure:** Docker, Docker Compose
+* **DevOps:** Docker, Docker Compose
 
 ## 📂 Project Structure
 
-* `/frontend_app` — The React user interface, featuring interactive character sheets (`CharacterSheet.tsx`) and forms.
-* `/backend_api` — The FastAPI server handling the business logic, dice rolling mechanics (`roller.py`), and character database endpoints.
+* `/frontend_app` — The React user interface, featuring interactive character sheets, dynamic tabs (`Stats`, `Combat`, `Spells`), and rolling modals.
+* `/backend_api` — The FastAPI server handling the business logic, the dice rolling engine (`roller.py`), and character database endpoints.
 * `docker-compose.yml` — Orchestration file for easy multi-container deployment.
 
-## 🔮 Future Improvements (Roadmap)
+## 🗺️ Development Plan (Roadmap)
 
-The application is actively evolving. Here are some of the key features planned for upcoming releases:
+The application is actively evolving. Here is the current progress and the roadmap for upcoming releases:
 
-* **Public Web Release:** The ultimate goal is to deploy the application to the cloud, making it publicly accessible for the tabletop RPG community to use online without requiring local installation.
-* **Session Rooms & Dungeon Master Dashboard:** Introducing dedicated multiplayer "rooms" where a Dungeon Master can invite players, monitor their live character sheets, track initiative, and make secret rolls behind the virtual screen.
-* **Real-Time Party Synchronization:** Implementing WebSockets so that HP updates, active conditions, and dice rolls are instantly broadcasted live to everyone in the session room.
-* **Advanced Spellcasting & Magic Management:** A dedicated interface to track spell slots, prepare daily spells, and manage custom spellbooks (e.g., quickly pulling up specific spell lists and save DCs).
-* **Inventory & Encumbrance Tracking:** Automated weight calculation for carried items, weapons, and treasure based on the 2024 revised strength and capacity rules.
-* **Custom Roll Macros & Homebrew Support:** Giving users the ability to save frequently used complex rolls (like specific weapon mastery properties) and toggle optional homebrew mechanics.
-* **Dark Mode & Mobile Optimization:** Enhancing the UI to be perfectly suited for late-night gaming sessions and seamless one-handed use on smartphones.
-*
+### Current Priorities (To-Do)
 
-## 🗺️ Development Plan (To-Do / Roadmap)
+- [X]  **Stat & Skill Rolls:** Click directly on core stats and skills to instantly trigger checks.
+- [X]  **Magic & Spell Slots Tracker:** Manage spells by level, track daily slots, and cast spells with built-in attack rolls.
+- [ ]  **Equipment & Encumbrance (Next up!):** Implement a backpack system to track items (potions, gold, gear) with automated weight calculation based on the 2024 Strength rules.
+- [ ]  **Smart Combat Panel:** Combine weapon attacks and combat spells into a single, unified interface for faster decision-making in the heat of battle.
 
-Next steps to improve the Character Sheet functionality:
+### Future Improvements
 
-- [ ]  **Backpack / Inventory:** Implement a system for adding and managing items, tracking quantities, and potentially calculating equipment weight.
-- [ ]  **Smart Combat Panel:** Combine weapon attacks and combat spells into a single, unified interface so everything you need in the heat of battle is right at your fingertips.
-- [ ]  **Stat Rolls:** Add the ability to click directly on core stats (Strength, Dexterity, etc.) and saving throws to automatically trigger and roll checks.
-
-The frontend has been successfully decomposed. The following are the priority tasks for development:
-
-
-1. **Equipment: Inventory & Encumbrance**
-
-   * *Task:* Add a new tab or expand `CombatTab.tsx` to track standard items.
-   * *Feature:* Implement CRUD operations for backpack items (potions, gold, torches) and an automatic weight/encumbrance calculation based on the 2024 D&D rules using the character's Strength score.
+* **Public Web Release:** Deploy the application to the cloud, making it publicly accessible for the TTRPG community.
+* **Session Rooms & DM Dashboard:** Introduce dedicated multiplayer "rooms" where a Dungeon Master can monitor live character sheets, track initiative, and make secret rolls.
+* **Real-Time Party Synchronization:** Implement WebSockets so that HP updates, active conditions, and dice rolls are instantly broadcasted live to everyone in the session room.
+* **Custom Roll Macros & Homebrew:** Allow users to save frequently used complex rolls (like specific weapon mastery properties) and toggle optional homebrew mechanics.
+* **Dark Mode & Mobile Optimization:** Enhance the UI for seamless one-handed use on smartphones during late-night gaming sessions.
 
 ## ⚙️ Getting Started
 
@@ -66,7 +58,14 @@ Make sure you have [Docker](https://www.docker.com/) and Docker Compose installe
 ### Installation & Running
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/h00yaday/Charnik_online.git
-   cd Charnik_online
+
    ```
+   git clone [https://github.com/h00yaday/Charnik_online.git](https://github.com/h00yaday/Charnik_online.git)
+   cd Charnik_online 
+   ```
+   2. Build and start the containers:
+
+   ```
+   docker-compose up --build
+   ```
+   3. Open your browser and navigate to `http://localhost:5173` to access the application. The API documentation is available at `http://localhost:8000/docs`.
