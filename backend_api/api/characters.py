@@ -385,3 +385,30 @@ async def delete_feature(
     await db.execute(delete(Feature).where(Feature.id == feature_id, Feature.character_id == character_id))
     await db.commit()
     return None
+
+@router.post("/{character_id}/roll-check")
+async def roll_character_check(
+    character_id: int,
+    action: str,
+    bonus: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    char_result = await db.execute(
+        select(Character.id).where(Character.id == character_id, Character.owner_id == current_user.id)
+    )
+    if not char_result.scalar_one_or_none():
+         raise HTTPException(status_code=404, detail="Персонаж не найден")
+
+    d20_roll = random.randint(1, 20)
+    
+    return {
+        "action": action,
+        "hit_roll": {
+            "d20_face": d20_roll,
+            "bonus": bonus,
+            "total": d20_roll + bonus,
+            "is_critical": d20_roll == 20,
+            "is_critical_fail": d20_roll == 1
+        }
+    }

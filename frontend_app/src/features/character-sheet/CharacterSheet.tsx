@@ -151,7 +151,14 @@ export default function CharacterSheet({ character,  onBack }: Props) {
 
   return (
     <div className="bg-slate-950 min-h-screen text-slate-200 animate-fade-in pb-10 font-sans relative">
-      <CharacterHeader character={localChar} onBack={onBack} profBonus={profBonus} onLongRest={handleLongRest} onShortRest={handleShortRest} />
+      <CharacterHeader 
+        character={localChar} 
+        onBack={onBack} 
+        profBonus={profBonus} 
+        onLongRest={handleLongRest} 
+        onShortRest={handleShortRest} 
+        onUpdateLevel={(newLevel) => updateField('level', newLevel)}
+      />
 
       {/* Навигация */}
       <div className="max-w-6xl mx-auto px-4 mt-6 flex gap-1 overflow-x-auto no-scrollbar">
@@ -169,7 +176,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
 
       {/* ТЕЛО ЧАРНИКА */}
       <div className="max-w-6xl mx-auto px-4 mt-6">
-        {activeTab === 'stats' && <StatsTab character={localChar} profBonus={profBonus} onToggleSkill={toggleSkill} onToggleSave={toggleSavingThrow} onUpdateStat={(statId, value) => updateField(statId, Math.max(1, Math.min(30, value)))} />}
+        {activeTab === 'stats' && <StatsTab character={localChar} profBonus={profBonus} onToggleSkill={toggleSkill} onToggleSave={toggleSavingThrow} onUpdateStat={(statId, value) => updateField(statId, Math.max(1, Math.min(30, value)))} onRoll={handleRoll} />}
         {activeTab === 'combat' && (
           <CombatTab 
             character={localChar} 

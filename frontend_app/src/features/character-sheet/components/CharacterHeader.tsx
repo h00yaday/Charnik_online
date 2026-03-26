@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react'; // <-- ДОБАВИЛИ ИМПОРТЫ
 import type { Character } from '../../../types/character';
 
 interface Props {
@@ -6,9 +7,26 @@ interface Props {
   profBonus: number;
   onLongRest: () => void;
   onShortRest: () => void;
+  onUpdateLevel: (newLevel: number) => void; // <-- НОВЫЙ ПРОПС
 }
 
-export default function CharacterHeader({ character, onBack, profBonus, onLongRest, onShortRest }: Props) {
+export default function CharacterHeader({ character, onBack, profBonus, onLongRest, onShortRest, onUpdateLevel }: Props) {
+  // Состояния для режима редактирования уровня
+  const [isEditingLevel, setIsEditingLevel] = useState(false);
+  const [tempLevel, setTempLevel] = useState(character.level);
+
+  // Синхронизируем локальный стейт, если уровень обновился снаружи
+  useEffect(() => {
+    setTempLevel(character.level);
+  }, [character.level]);
+
+  const handleSaveLevel = () => {
+    if (tempLevel !== character.level) {
+      onUpdateLevel(tempLevel);
+    }
+    setIsEditingLevel(false);
+  };
+
   // Высчитываем процент ХП для цвета полоски здоровья
   const hpPercentage = Math.round((character.current_hp / character.max_hp) * 100);
   let hpColor = 'bg-green-500';
@@ -26,13 +44,36 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
           </button>
           <div>
             <h1 className="text-3xl font-black text-white tracking-tight leading-none mb-1">{character.name}</h1>
-            <p className="text-slate-400 font-medium text-sm">
-              {character.race} • {character.character_class} {character.subclass && `(${character.subclass})`} • Уровень {character.level}
-            </p>
+            
+            <div className="flex items-center gap-2 text-slate-400 font-medium text-sm">
+              <span>{character.race} • {character.character_class} {character.subclass && `(${character.subclass})`} •</span>
+              
+              {/* БЛОК УРОВНЯ */}
+              {isEditingLevel ? (
+                <div className="flex items-center gap-2 bg-slate-800 rounded px-1 py-0.5 border border-slate-600">
+                  <button onClick={() => setTempLevel(Math.max(1, tempLevel - 1))} className="text-slate-400 hover:text-red-400 font-bold px-1">-</button>
+                  <span className="text-white font-bold w-4 text-center">{tempLevel}</span>
+                  <button onClick={() => setTempLevel(Math.min(20, tempLevel + 1))} className="text-slate-400 hover:text-green-400 font-bold px-1">+</button>
+                  <button onClick={handleSaveLevel} className="ml-2 text-xs text-blue-400 hover:text-blue-300 font-bold">ОК</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 group">
+                   <span>Уровень {character.level}</span>
+                   <button 
+                     onClick={() => setIsEditingLevel(true)} 
+                     className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 hover:text-blue-400 transition-all px-1"
+                     title="Изменить уровень"
+                   >
+                     ✎
+                   </button>
+                </div>
+              )}
+            </div>
+            
           </div>
         </div>
 
-        {/* ЦЕНТРАЛЬНАЯ ЧАСТЬ: Базовые статы */}
+        {/* ЦЕНТРАЛЬНАЯ ЧАСТЬ: Базовые статы (Без изменений) */}
         <div className="flex gap-3">
           <div className="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700">
             <span className="block text-[10px] text-slate-500 font-bold uppercase mb-0.5 tracking-wider">КД</span>
@@ -52,7 +93,7 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
           </div>
         </div>
 
-        {/* ПРАВАЯ ЧАСТЬ: Здоровье и Отдых */}
+        {/* ПРАВАЯ ЧАСТЬ: Здоровье и Отдых (Без изменений) */}
         <div className="w-full md:w-72 flex flex-col gap-2">
           <div className="bg-slate-800 p-3 rounded-xl border border-slate-700 relative overflow-hidden">
             <div className="flex justify-between items-end relative z-10 mb-2">
