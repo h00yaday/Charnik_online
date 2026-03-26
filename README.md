@@ -51,11 +51,8 @@ Next steps to improve the Character Sheet functionality:
 
 The frontend has been successfully decomposed. The following are the priority tasks for development:
 
-1. **Magic: Spell Slots Tracker**
 
-   * *Task:* Develop a UI in `SpellsTab.tsx` to display spell slots by level (1 through 9).
-   * *Feature:* Allow players to click and mark spent slots during combat (utilizing the existing `spell_slots` field in the database) and restore them upon taking a rest.
-2. **Equipment: Inventory & Encumbrance**
+1. **Equipment: Inventory & Encumbrance**
 
    * *Task:* Add a new tab or expand `CombatTab.tsx` to track standard items.
    * *Feature:* Implement CRUD operations for backpack items (potions, gold, torches) and an automatic weight/encumbrance calculation based on the 2024 D&D rules using the character's Strength score.

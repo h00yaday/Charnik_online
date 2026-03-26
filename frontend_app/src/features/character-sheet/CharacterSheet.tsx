@@ -57,6 +57,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
     updateField('current_hp', Math.max(0, Math.min(localChar.max_hp, localChar.current_hp + amount)));
   };
 
+
   const handleRoll = async (url: string) => {
     setIsRolling(true);
     try {
@@ -169,7 +170,17 @@ export default function CharacterSheet({ character,  onBack }: Props) {
       {/* ТЕЛО ЧАРНИКА */}
       <div className="max-w-6xl mx-auto px-4 mt-6">
         {activeTab === 'stats' && <StatsTab character={localChar} profBonus={profBonus} onToggleSkill={toggleSkill} onToggleSave={toggleSavingThrow} onUpdateStat={(statId, value) => updateField(statId, Math.max(1, Math.min(30, value)))} />}
-        {activeTab === 'combat' && <CombatTab character={localChar} isRolling={isRolling} onUpdateHp={updateHP} onRoll={handleRoll} onAddAttack={() => setShowAttackModal(true)} onDeleteAttack={(id) => deleteItem('attacks', id)} />}
+        {activeTab === 'combat' && (
+          <CombatTab 
+            character={localChar} 
+            isRolling={isRolling} 
+            onUpdateHp={updateHP} 
+            onUpdateAC={(newAC) => updateField('armor_class', newAC)}
+            onRoll={handleRoll} 
+            onAddAttack={() => setShowAttackModal(true)} 
+            onDeleteAttack={(id) => deleteItem('attacks', id)} 
+          />
+        )}
         {activeTab === 'spells' && <SpellsTab character={localChar} isRolling={isRolling} onAddSpell={() => setShowSpellModal(true)} onDeleteSpell={(id) => deleteItem('spells', id)} onCast={handleCastSpell} onUpdateSlots={updateSpellSlot} />}
         {activeTab === 'features' && <FeaturesTab character={localChar} />}
       </div>
