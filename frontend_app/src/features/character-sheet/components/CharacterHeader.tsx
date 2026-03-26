@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'; // <-- ДОБАВИЛИ ИМПОРТЫ
+import { useState, useEffect } from 'react'; 
 import type { Character } from '../../../types/character';
+import { getModifier } from '../../../utils/math';
 
 interface Props {
   character: Character;
@@ -33,6 +34,8 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
   if (hpPercentage <= 50) hpColor = 'bg-amber-500';
   if (hpPercentage <= 20) hpColor = 'bg-red-500';
 
+  const dexMod = getModifier(character.dexterity);
+  const totalInitiative = dexMod + (character.initiative_bonus || 0);
   return (
     <div className="bg-slate-900 border-b border-slate-800 pt-6 pb-6 px-4 sticky top-0 z-40 shadow-xl">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
@@ -81,7 +84,9 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
           </div>
           <div className="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700">
             <span className="block text-[10px] text-slate-500 font-bold uppercase mb-0.5 tracking-wider">Иниц.</span>
-            <span className="text-2xl font-black text-amber-400">{character.initiative_bonus >= 0 ? `+${character.initiative_bonus}` : character.initiative_bonus}</span>
+            <span className="text-2xl font-black text-amber-400">
+              {totalInitiative >= 0 ? `+${totalInitiative}` : totalInitiative}
+            </span>
           </div>
           <div className="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700">
             <span className="block text-[10px] text-slate-500 font-bold uppercase mb-0.5 tracking-wider">Скор.</span>
