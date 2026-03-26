@@ -13,6 +13,8 @@ export interface Spell {
   description: string; 
   damage_dice?: string; 
   damage_type?: string; 
+  requires_attack_roll?: boolean;
+  spell_attack_bonus?: number;
 }
 
 export interface Feature { 

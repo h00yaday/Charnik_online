@@ -111,7 +111,21 @@ export default function SpellsTab({ character, isRolling, onAddSpell, onDeleteSp
                     <button onClick={() => onDeleteSpell(spell.id)} className="text-slate-500 hover:text-red-400">✕</button>
                   </div>
                 </div>
-                {spell.damage_dice && <p className="text-xs text-red-400 font-mono mb-2 bg-red-900/10 inline-block px-2 py-1 rounded">Урон: {spell.damage_dice} {spell.damage_type}</p>}
+                
+                {/* ОБНОВЛЕННЫЙ БЛОК: Вывод атаки и урона */}
+                <div className="flex gap-2 flex-wrap mb-2">
+                  {spell.requires_attack_roll && (
+                    <span className="text-xs text-blue-400 font-mono bg-blue-900/20 inline-block px-2 py-1 rounded border border-blue-900/50">
+                      Атака: {spell.spell_attack_bonus && spell.spell_attack_bonus >= 0 ? `+${spell.spell_attack_bonus}` : spell.spell_attack_bonus}
+                    </span>
+                  )}
+                  {spell.damage_dice && (
+                    <span className="text-xs text-red-400 font-mono bg-red-900/10 inline-block px-2 py-1 rounded border border-red-900/30">
+                      Урон: {spell.damage_dice} {spell.damage_type}
+                    </span>
+                  )}
+                </div>
+
                 {spell.description && <p className="text-xs text-slate-400 mt-1 line-clamp-3 mb-4">{spell.description}</p>}
               </div>
               <button 
