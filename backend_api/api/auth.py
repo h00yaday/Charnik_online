@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -7,6 +7,7 @@ from db.database import get_db
 from db.models import User
 from schemas.schemas import UserCreate, UserResponse
 from core.security import get_password_hash, verify_password, create_access_token
+from core.config import settings # Добавили импорт настроек
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -25,8 +26,7 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     return new_user
 
 @router.post("/login")
-async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
-    
+async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == form_data.username))
     user = result.scalar_one_or_none()
     
@@ -34,9 +34,24 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends(), db: AsyncSessi
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Неверное имя пользователя или пароль",
-            headers={"WWW-Authenticate": "Bearer"},
         )
     
     access_token = create_access_token(data={"sub": str(user.id)})
     
-    return {"access_token": access_token, "token_type": "bearer"}
+    # Магия безопасности: устанавливаем HttpOnly cookie
+    response.set_cookie(
+        key="access_token",
+        value=f"Bearer {access_token}",
+        httponly=True,  # JavaScript не имеет доступа к этой куке!
+        secure=False,   # Для локальной разработки False. На проде (с HTTPS) нужно ставить True
+        samesite="lax",
+        max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
+    )
+    
+    return {"message": "Успешный вход"}
+
+@router.post("/logout")
+async def logout(response: Response):
+    # Удаляем куку при выходе
+    response.delete_cookie("access_token")
+    return {"message": "Успешный выход"}

@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified # <-- ДОБАВИЛИ ДЛЯ ЯЧЕЕК
 import random 
 from core.dice import parse_and_roll 
+from services.combat_service import CombatService
 from db.database import get_db
 from db.models import Character, User, Attack, Spell, Feature # <-- ДОБАВИЛИ FEATURE
 from api.dependencies import get_current_user
@@ -105,6 +106,7 @@ async def roll_character_attack(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    # 1. Только работа с БД (найти атаку)
     stmt = select(Attack).join(Character).where(
         Attack.id == attack_id,
         Attack.character_id == character_id,
@@ -116,33 +118,7 @@ async def roll_character_attack(
     if not attack:
         raise HTTPException(status_code=404, detail="Атака не найдена или у вас нет к ней доступа")
 
-    d20_roll = random.randint(1, 20)
-    hit_total = d20_roll + attack.attack_bonus
-    
-    is_critical = d20_roll == 20
-    is_critical_fail = d20_roll == 1
-
-    try:
-        damage_result = parse_and_roll(attack.damage_dice)
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=f"Ошибка в формуле кубиков атаки: {e}")
-
-    return {
-        "action": f"Атака: {attack.name}",
-        "hit_roll": {
-            "d20_face": d20_roll,
-            "bonus": attack.attack_bonus,
-            "total": hit_total,
-            "is_critical": is_critical,
-            "is_critical_fail": is_critical_fail
-        },
-        "damage": {
-            "total": damage_result["total"],
-            "dice_rolls": damage_result["rolls_detail"], 
-            "modifier": damage_result["modifier"],
-            "type": attack.damage_type
-        }
-    }
+    return CombatService.process_attack_roll(attack)
 
 @router.post("/{character_id}/spells/{spell_id}/roll")
 async def roll_character_spell(
@@ -162,38 +138,7 @@ async def roll_character_spell(
     if not spell:
         raise HTTPException(status_code=404, detail="Заклинание не найдено или у вас нет к нему доступа")
 
-    response_data = {
-        "action": f"Каст: {spell.name}"
-    }
-
-    if getattr(spell, 'requires_attack_roll', False):
-        d20_roll = random.randint(1, 20)
-        bonus = getattr(spell, 'spell_attack_bonus', 0)
-        response_data["hit_roll"] = {
-            "d20_face": d20_roll,
-            "bonus": bonus,
-            "total": d20_roll + bonus,
-            "is_critical": d20_roll == 20,
-            "is_critical_fail": d20_roll == 1
-        }
-
-    damage_dice = getattr(spell, 'damage_dice', None)
-    if damage_dice:
-        try:
-            damage_result = parse_and_roll(damage_dice)
-            response_data["damage"] = {
-                "total": damage_result["total"],
-                "dice_rolls": damage_result["rolls_detail"], 
-                "modifier": damage_result["modifier"],
-                "type": getattr(spell, 'damage_type', "Магический")
-            }
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Ошибка в формуле кубиков урона: {e}")
-
-    if not getattr(spell, 'requires_attack_roll', False) and not damage_dice:
-        response_data["effect"] = "Заклинание применено (без бросков урона/попадания)"
-
-    return response_data
+    return CombatService.process_spell_roll(spell)
 
 @router.patch("/{character_id}", response_model=CharacterResponse)
 async def update_character(
@@ -280,56 +225,15 @@ async def cast_spell(
     if not spell:
         raise HTTPException(status_code=404, detail="Заклинание не найдено")
 
-    char_result = await db.execute(select(Character).where(Character.id == character_id))
+    char_stmt = select(Character).where(Character.id == character_id).with_for_update()
+    char_result = await db.execute(char_stmt)
     character = char_result.scalar_one()
 
-    actual_cast_level = cast_level if cast_level is not None else spell.level
+    response_data = CombatService.process_spell_cast(spell, character, cast_level)
 
-    if actual_cast_level > 0:
-        level_key = str(actual_cast_level)
-        slots = character.spell_slots or {}
-        
-        slot_data = slots.get(level_key, {"total": 0, "used": 0})
-        
-        if slot_data["total"] - slot_data["used"] <= 0:
-            raise HTTPException(status_code=400, detail=f"Нет доступных ячеек {actual_cast_level} уровня!")
-
-        slot_data["used"] += 1
-        slots[level_key] = slot_data
-
-        character.spell_slots = slots
-        flag_modified(character, "spell_slots") # <-- ВОТ ОНА, МАГИЯ СОХРАНЕНИЯ
-
-        db.add(character)
-
-    response_data = {
-        "action": f"Каст заклинания: {spell.name} (Уровень {actual_cast_level})",
-        "spell_slots_remaining": slots[level_key]["total"] - slots[level_key]["used"] if actual_cast_level > 0 else "Бесконечно (заговор)"
-    }
-
-    if spell.requires_attack_roll:
-        d20_roll = random.randint(1, 20)
-        response_data["hit_roll"] = {
-            "d20_face": d20_roll,
-            "bonus": spell.spell_attack_bonus,
-            "total": d20_roll + spell.spell_attack_bonus,
-            "is_critical": d20_roll == 20,
-            "is_critical_fail": d20_roll == 1
-        }
-
-    if spell.damage_dice:
-        try:
-            damage_result = parse_and_roll(spell.damage_dice) 
-            response_data["damage"] = {
-                "total": damage_result["total"],
-                "dice_rolls": damage_result["rolls_detail"], 
-                "modifier": damage_result["modifier"],
-                "type": spell.damage_type
-            }
-        except ValueError as e:
-            raise HTTPException(status_code=400, detail=f"Ошибка в формуле кубиков урона: {e}")
-
+    db.add(character)
     await db.commit()
+    
     return response_data
 
 @router.delete("/{character_id}/spells/{spell_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -400,15 +304,4 @@ async def roll_character_check(
     if not char_result.scalar_one_or_none():
          raise HTTPException(status_code=404, detail="Персонаж не найден")
 
-    d20_roll = random.randint(1, 20)
-    
-    return {
-        "action": action,
-        "hit_roll": {
-            "d20_face": d20_roll,
-            "bonus": bonus,
-            "total": d20_roll + bonus,
-            "is_critical": d20_roll == 20,
-            "is_critical_fail": d20_roll == 1
-        }
-    }
+    return CombatService.process_check_roll(action, bonus)

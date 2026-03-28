@@ -1,7 +1,7 @@
 import { useState } from 'react';
 
 interface AuthProps {
-  onLogin: (token: string) => void;
+  onLogin: () => void;
 }
 
 export default function Auth({ onLogin }: AuthProps) {
@@ -27,18 +27,18 @@ export default function Auth({ onLogin }: AuthProps) {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: formData,
+          credentials: 'include',
         });
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || 'Ошибка при входе');
-
-        localStorage.setItem('token', data.access_token);
-        onLogin(data.access_token);
+        onLogin();
       } else {
         const response = await fetch('http://localhost:8000/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),
+          credentials: 'include',
         });
 
         const data = await response.json();

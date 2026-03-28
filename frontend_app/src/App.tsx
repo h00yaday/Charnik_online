@@ -5,75 +5,66 @@ import CharacterSheet from './features/character-sheet/CharacterSheet';
 import type { Character } from './types/character';
 import { fetchWithAuth } from './utils/api';
 
-// Утилита для чтения внутренностей JWT токена
-const parseJwt = (token: string) => {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    return null;
-  }
-};
-
 export default function App() {
-  const [token, setToken] = useState<string>(localStorage.getItem('token') || '');
+  // Теперь мы просто храним статус авторизации
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 
-  // Функция выхода
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    setToken('');
-    setSelectedCharacter(null);
-    setCharacters([]);
-  };
-
-  // Глобальный "Будильник" для токена
   useEffect(() => {
-    if (!token) return;
+    const handleUnauthorized = () => {
+      // Выбрасываем пользователя ТОЛЬКО если он думал, что авторизован
+      if (isAuthenticated) {
+        alert('Сессия истекла или недействительна. Пожалуйста, войдите снова.');
+        setIsAuthenticated(false);
+        setSelectedCharacter(null); // Закрываем чарник, если он был открыт
+      }
+    };
+    // Подписываемся на событие
+    window.addEventListener('unauthorized', handleUnauthorized);
+    
+    // Очищаем слушатель, если компонент будет удален
+    return () => window.removeEventListener('unauthorized', handleUnauthorized);
+  }, [isAuthenticated]); // Зависимость гарантирует, что мы видим актуальный стейт
 
-    const decodedToken = parseJwt(token);
-    if (!decodedToken || !decodedToken.exp) return;
-
-    const timeLeft = (decodedToken.exp * 1000) - Date.now();
-
-    if (timeLeft <= 0) {
-      alert('Время вашей сессии истекло. Пожалуйста, войдите снова.');
-      handleLogout();
-    } else {
-      const timer = setTimeout(() => {
-        alert('Время вашей сессии истекло. Пожалуйста, войдите снова.');
-        handleLogout();
-      }, timeLeft);
-
-      return () => clearTimeout(timer);
-    }
-  }, [token]);
-
-  // Загрузка списка персонажей
   const fetchCharacters = async () => {
-    if (!token) return;
     setLoading(true);
     try {
-      const res = await fetchWithAuth('http://localhost:8000/characters/');
+      const res = await fetchWithAuth('/characters/');
       if (res.ok) {
         setCharacters(await res.json());
+        setIsAuthenticated(true); // Раз отдали данные, значит кука работает!
       }
-    } catch (err: any) {
-      if (err.message !== 'Unauthorized') console.error(err);
+    } catch (err) {
+      // Если тут 401, сработает наш глобальный слушатель (unauthorized)
+      // Если это просто старт приложения без куки, слушатель промолчит.
+      // Поэтому здесь ничего дополнительно делать не нужно.
     } finally {
       setLoading(false);
     }
   };
 
-  // Загружаем персонажей при входе
+  // Вызываем её ровно один раз при загрузке приложения
   useEffect(() => {
-    if (token) fetchCharacters();
-  }, [token]);
+    fetchCharacters();
+  }, []);
 
-  // Удаление персонажа с правильными аргументами (event и id)
+  const handleLogout = async () => {
+    try {
+      // Говорим серверу убить куку
+      await fetchWithAuth('/auth/logout', { method: 'POST' });
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setIsAuthenticated(false);
+      setSelectedCharacter(null);
+      setCharacters([]);
+    }
+  };
+
   const deleteCharacter = async (e: any, id: number) => {
-    e.stopPropagation(); // Не даем "кликнуть" по карточке и открыть персонажа
+    e.stopPropagation();
     if (!window.confirm('Вы уверены, что хотите удалить этого персонажа навсегда?')) return;
     try {
       const res = await fetchWithAuth(`http://localhost:8000/characters/${id}`, {
@@ -83,30 +74,30 @@ export default function App() {
         setCharacters(prev => prev.filter(c => c.id !== id));
       }
     } catch (err: any) {
-      if (err.message !== 'Unauthorized') console.error('Ошибка удаления', err);
+      console.error('Ошибка удаления', err);
     }
   };
 
-  // --- РЕНДЕР ---
-
-  if (!token) {
-    return <Auth onLogin={setToken} />;
+  if (!isAuthenticated) {
+    // Передаем коллбэк, который переключит стейт после успешного логина
+    return <Auth onLogin={() => {
+      setIsAuthenticated(true);
+      fetchCharacters();
+    }} />;
   }
 
-  // Если персонаж выбран -> показываем Чарник
   if (selectedCharacter) {
     return (
       <CharacterSheet
         character={selectedCharacter}
         onBack={() => {
           setSelectedCharacter(null);
-          fetchCharacters(); // Обновляем список при возвращении в Таверну
+          fetchCharacters();
         }}
       />
     );
   }
 
-  // Иначе -> показываем Таверну
   return (
     <Tavern
       characters={characters}
