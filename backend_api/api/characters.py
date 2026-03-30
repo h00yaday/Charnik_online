@@ -270,6 +270,18 @@ async def add_feature_to_character(
         raise HTTPException(status_code=404, detail="Персонаж не найден")
 
     new_feature = Feature(**feature_in.model_dump(), character_id=character.id)
+    
+    if new_feature.modifiers:
+        for stat, bonus in new_feature.modifiers.items():
+            if hasattr(character, stat):
+                current_val = getattr(character, stat)
+                setattr(character, stat, current_val + bonus)
+                
+        # Если меняем max_hp, можно сразу хилить перса
+        if "max_hp" in new_feature.modifiers:
+             character.current_hp += new_feature.modifiers["max_hp"]
+             
+
     db.add(new_feature)
     await db.commit()
     await db.refresh(new_feature)
@@ -282,12 +294,34 @@ async def delete_feature(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    char_result = await db.execute(select(Character.id).where(Character.id == character_id, Character.owner_id == current_user.id))
-    if not char_result.scalar_one_or_none():
+    char_result = await db.execute(
+        select(Character).where(Character.id == character_id, Character.owner_id == current_user.id)
+    )
+    character = char_result.scalar_one_or_none()
+    
+    if not character:
          raise HTTPException(status_code=404, detail="Персонаж не найден")
+    feat_result = await db.execute(
+        select(Feature).where(Feature.id == feature_id, Feature.character_id == character_id)
+    )
+    feature = feat_result.scalar_one_or_none()
 
-    await db.execute(delete(Feature).where(Feature.id == feature_id, Feature.character_id == character_id))
+    if not feature:
+        raise HTTPException(status_code=404, detail="Особенность не найдена")
+
+    if feature.modifiers:
+        for stat, bonus in feature.modifiers.items():
+            if hasattr(character, stat):
+                current_val = getattr(character, stat)
+                setattr(character, stat, current_val - bonus) # Отнимаем бонус
+        
+        if "max_hp" in feature.modifiers:
+            if character.current_hp > character.max_hp:
+                character.current_hp = character.max_hp
+
+    await db.delete(feature)
     await db.commit()
+    
     return None
 
 @router.post("/{character_id}/roll-check")

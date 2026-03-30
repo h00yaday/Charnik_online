@@ -13,6 +13,7 @@ import FeaturesTab from './components/FeaturesTab';
 import RollModal from './components/modals/RollModal';
 import AttackModal from './components/modals/AttackModal';
 import SpellModal from './components/modals/SpellModal';
+import FeatureModal from './components/modals/FeatureModal';
 
 interface Props { character: Character; onBack: () => void; }
 
@@ -27,6 +28,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
   const [isRolling, setIsRolling] = useState(false);
   const [showAttackModal, setShowAttackModal] = useState(false);
   const [showSpellModal, setShowSpellModal] = useState(false);
+  const [showFeatureModal, setShowFeatureModal] = useState(false);
 
   const profBonus = getProfBonus(localChar.level);
 
@@ -93,7 +95,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
     } catch (err: any) { if (err.message !== 'Unauthorized') console.error(err); }
   };
 
-  const deleteItem = async (type: 'attacks' | 'spells', id: number) => {
+  const deleteItem = async (type: 'attacks' | 'spells' | 'features', id: number) => {
     if (!window.confirm('Точно удалить?')) return;
     try {
       const res = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}/${type}/${id}`, { method: 'DELETE' });
@@ -149,6 +151,18 @@ export default function CharacterSheet({ character,  onBack }: Props) {
     }
   };
 
+  const submitFeature = async (featureData: any) => {
+    try {
+      const res = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}/features`, {
+        method: 'POST', body: JSON.stringify(featureData),
+      });
+      if (res.ok) {
+        const newFeature = await res.json();
+        setLocalChar(prev => ({ ...prev, features: [...prev.features, newFeature] }));
+      }
+    } catch (err: any) { if (err.message !== 'Unauthorized') console.error(err); }
+  };
+
   return (
     <div className="bg-slate-950 min-h-screen text-slate-200 animate-fade-in pb-10 font-sans relative">
       <CharacterHeader 
@@ -189,13 +203,20 @@ export default function CharacterSheet({ character,  onBack }: Props) {
           />
         )}
         {activeTab === 'spells' && <SpellsTab character={localChar} isRolling={isRolling} onAddSpell={() => setShowSpellModal(true)} onDeleteSpell={(id) => deleteItem('spells', id)} onCast={handleCastSpell} onUpdateSlots={updateSpellSlot} />}
-        {activeTab === 'features' && <FeaturesTab character={localChar} />}
+        {activeTab === 'features' && (
+          <FeaturesTab 
+            character={localChar} 
+            onAddFeature={() => setShowFeatureModal(true)} 
+            onDeleteFeature={(id) => deleteItem('features', id)} 
+          />
+        )}
       </div>
 
       {/* Вынесенные модальные окна! */}
       <RollModal result={rollResult} onClose={() => setRollResult(null)} />
       {showAttackModal && <AttackModal onClose={() => setShowAttackModal(false)} onSubmit={submitAttack} />}
       {showSpellModal && <SpellModal onClose={() => setShowSpellModal(false)} onSubmit={submitSpell} />}
+      {showFeatureModal && <FeatureModal onClose={() => setShowFeatureModal(false)} onSubmit={submitFeature} />}
     </div>
   );
 }

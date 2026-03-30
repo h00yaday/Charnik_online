@@ -7,6 +7,7 @@ class FeatureBase(BaseModel):
     name: str
     description: str
     source: str = "Класс"
+    modifiers: Dict[str, int] = Field(default_factory=dict)
 
 class FeatureCreate(FeatureBase):
     pass

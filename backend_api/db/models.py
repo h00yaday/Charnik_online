@@ -87,5 +87,7 @@ class Feature(Base):
     description: Mapped[str] = mapped_column(String)
     source: Mapped[str] = mapped_column(String(50))
     
+    modifiers: Mapped[dict] = mapped_column(JSON, default=dict, server_default='{}')
+    
     character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     character: Mapped["Character"] = relationship(back_populates="features")

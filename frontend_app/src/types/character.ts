@@ -22,6 +22,7 @@ export interface Feature {
   name: string; 
   description: string; 
   source: string; 
+  modifiers?: Record<string, number>; 
 }
 
 export interface Character {
