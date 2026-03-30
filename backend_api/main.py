@@ -9,14 +9,12 @@ from api import characters, auth, roller
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    yield
-
-app = FastAPI(title="D&D Manager API", lifespan=lifespan)
-
-@app.on_event("startup")
-async def init_tables():
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    yield # Приложение работает
+    # Здесь можно добавить код для очистки ресурсов при завершении приложения, если нужно
+app = FastAPI(title="D&D Manager API", lifespan=lifespan)
+
 
 app.add_middleware(
     CORSMiddleware,

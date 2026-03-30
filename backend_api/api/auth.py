@@ -38,17 +38,18 @@ async def login(response: Response, form_data: OAuth2PasswordRequestForm = Depen
     
     access_token = create_access_token(data={"sub": str(user.id)})
     
-    # Магия безопасности: устанавливаем HttpOnly cookie
+    is_secure = settings.ENVIRONMENT == "production"
+    
     response.set_cookie(
         key="access_token",
-        value=f"Bearer {access_token}",
-        httponly=True,  # JavaScript не имеет доступа к этой куке!
-        secure=False,   # Для локальной разработки False. На проде (с HTTPS) нужно ставить True
+        value=access_token, 
+        httponly=True,  
+        secure=is_secure, 
         samesite="lax",
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
     )
     
-    return {"message": "Успешный вход"}
+    return {"access_token": access_token, "token_type": "bearer"}
 
 @router.post("/logout")
 async def logout(response: Response):

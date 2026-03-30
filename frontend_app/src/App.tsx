@@ -31,15 +31,13 @@ export default function App() {
   const fetchCharacters = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('/characters/');
+      const res = await fetchWithAuth('http://localhost:8000/characters/');
       if (res.ok) {
         setCharacters(await res.json());
-        setIsAuthenticated(true); // Раз отдали данные, значит кука работает!
+        setIsAuthenticated(true);
       }
     } catch (err) {
-      // Если тут 401, сработает наш глобальный слушатель (unauthorized)
-      // Если это просто старт приложения без куки, слушатель промолчит.
-      // Поэтому здесь ничего дополнительно делать не нужно.
+      console.error("Ошибка загрузки персонажей:", err); 
     } finally {
       setLoading(false);
     }
@@ -52,8 +50,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      // Говорим серверу убить куку
-      await fetchWithAuth('/auth/logout', { method: 'POST' });
+      await fetchWithAuth('http://localhost:8000/auth/logout', { method: 'POST' });
     } catch (e) {
       console.error(e);
     } finally {
