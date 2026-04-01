@@ -8,7 +8,8 @@ from core.dice import parse_and_roll
 from services.combat_service import CombatService
 from db.database import get_db
 from db.models import Character, User, Attack, Spell, Feature # <-- ДОБАВИЛИ FEATURE
-from api.dependencies import get_current_user
+from db.repository import CharacterRepository
+from api.dependencies import get_current_user, CurrentUser
 from schemas.schemas import (
     CharacterCreate, CharacterResponse, CharacterUpdate,
     AttackCreate, AttackResponse,
@@ -21,7 +22,7 @@ router = APIRouter(prefix="/characters", tags=["Characters"])
 async def create_character(
     char_in: CharacterCreate, 
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     char_data = char_in.model_dump()
 
@@ -40,12 +41,15 @@ async def create_character(
     character_with_relations = result.scalar_one()
 
     return character_with_relations
-
+    
 @router.get("/", response_model=list[CharacterResponse])
 async def get_characters(
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user) 
+    current_user: CurrentUser = Depends(get_current_user)
 ):
+    # Запрашиваем всех персонажей текущего пользователя
+    # Обязательно подгружаем связи (attacks, spells, features), 
+    # так как их скорее всего ожидает CharacterResponse
     stmt = select(Character).where(Character.owner_id == current_user.id).options(
         selectinload(Character.attacks),
         selectinload(Character.spells),
@@ -53,14 +57,28 @@ async def get_characters(
     )
     result = await db.execute(stmt)
     characters = result.scalars().all()
+    
     return characters
+
+@router.get("/{char_id}", response_model=CharacterResponse)
+async def get_character(
+    char_id: int, 
+    db: AsyncSession = Depends(get_db), 
+    current_user: CurrentUser = Depends(get_current_user)
+):
+    repo = CharacterRepository(db) # Создаем репозиторий
+    character = await repo.get_by_id(char_id, current_user.id)
+    
+    if not character:
+        raise HTTPException(status_code=404, detail="Персонаж не найден")
+    return character
 
 @router.post("/{character_id}/attacks", response_model=AttackResponse)
 async def add_attack_to_character(
     character_id: int,
     attack_in: AttackCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     result = await db.execute(
         select(Character).where(Character.id == character_id, Character.owner_id == current_user.id)
@@ -82,7 +100,7 @@ async def add_spell_to_character(
     character_id: int,
     spell_in: SpellCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     result = await db.execute(
         select(Character).where(Character.id == character_id, Character.owner_id == current_user.id)
@@ -104,7 +122,7 @@ async def roll_character_attack(
     character_id: int,
     attack_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     # 1. Только работа с БД (найти атаку)
     stmt = select(Attack).join(Character).where(
@@ -125,7 +143,7 @@ async def roll_character_spell(
     character_id: int,
     spell_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     stmt = select(Spell).join(Character).where(
         Spell.id == spell_id,
@@ -145,7 +163,7 @@ async def update_character(
     character_id: int,
     char_update: CharacterUpdate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     stmt = select(Character).where(Character.id == character_id, Character.owner_id == current_user.id).options(
         selectinload(Character.attacks),
@@ -178,7 +196,7 @@ async def update_character(
 async def delete_character(
     character_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     result = await db.execute(select(Character).where(Character.id == character_id, Character.owner_id == current_user.id))
     character = result.scalar_one_or_none()
@@ -194,7 +212,7 @@ async def delete_attack(
     character_id: int,
     attack_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     char_stmt = select(Character.id).where(Character.id == character_id, Character.owner_id == current_user.id)
     char_result = await db.execute(char_stmt)
@@ -212,7 +230,7 @@ async def cast_spell(
     spell_id: int,
     cast_level: int = None, 
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     stmt = select(Spell).join(Character).where(
         Spell.id == spell_id,
@@ -241,7 +259,7 @@ async def delete_spell(
     character_id: int,
     spell_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     stmt = select(Spell).join(Character).where(
         Spell.id == spell_id,
@@ -262,7 +280,7 @@ async def add_feature_to_character(
     character_id: int,
     feature_in: FeatureCreate,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     result = await db.execute(select(Character).where(Character.id == character_id, Character.owner_id == current_user.id))
     character = result.scalar_one_or_none()
@@ -292,7 +310,7 @@ async def delete_feature(
     character_id: int,
     feature_id: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     char_result = await db.execute(
         select(Character).where(Character.id == character_id, Character.owner_id == current_user.id)
@@ -330,7 +348,7 @@ async def roll_character_check(
     action: str,
     bonus: int,
     db: AsyncSession = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: CurrentUser = Depends(get_current_user)
 ):
     char_result = await db.execute(
         select(Character.id).where(Character.id == character_id, Character.owner_id == current_user.id)

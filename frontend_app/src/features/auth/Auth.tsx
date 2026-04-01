@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { fetchWithAuth } from '../../utils/api';
 
 interface AuthProps {
   onLogin: () => void;
@@ -23,7 +24,7 @@ export default function Auth({ onLogin }: AuthProps) {
         formData.append('username', username);
         formData.append('password', password);
 
-        const response = await fetch('http://localhost:8000/auth/login', {
+        const response = await fetchWithAuth('/auth/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
           body: formData,
@@ -34,7 +35,7 @@ export default function Auth({ onLogin }: AuthProps) {
         if (!response.ok) throw new Error(data.detail || 'Ошибка при входе');
         onLogin();
       } else {
-        const response = await fetch('http://localhost:8000/auth/register', {
+        const response = await fetchWithAuth('/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username, password }),

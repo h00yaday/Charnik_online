@@ -31,7 +31,7 @@ export default function App() {
   const fetchCharacters = async () => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth('http://localhost:8000/characters/');
+      const res = await fetchWithAuth('/characters/');
       if (res.ok) {
         setCharacters(await res.json());
         setIsAuthenticated(true);
@@ -50,7 +50,7 @@ export default function App() {
 
   const handleLogout = async () => {
     try {
-      await fetchWithAuth('http://localhost:8000/auth/logout', { method: 'POST' });
+      await fetchWithAuth('/auth/logout', { method: 'POST' });
     } catch (e) {
       console.error(e);
     } finally {
@@ -64,7 +64,7 @@ export default function App() {
     e.stopPropagation();
     if (!window.confirm('Вы уверены, что хотите удалить этого персонажа навсегда?')) return;
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/characters/${id}`, {
+      const res = await fetchWithAuth(`/characters/${id}`, {
         method: 'DELETE'
       });
       if (res.ok) {

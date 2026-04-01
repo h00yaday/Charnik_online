@@ -50,7 +50,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
             return (
               <div 
                 key={statId} 
-                onClick={() => !isEditing && onRoll(`http://localhost:8000/characters/${character.id}/roll-check?action=${encodeURIComponent(`Проверка: ${statLabel}`)}&bonus=${mod}`)}
+                onClick={() => !isEditing && onRoll(`/characters/${character.id}/roll-check?action=${encodeURIComponent(`Проверка: ${statLabel}`)}&bonus=${mod}`)}
                 className={`bg-slate-800 rounded-2xl p-4 border border-slate-700 shadow-lg group relative transition-all ${
                   !isEditing ? 'cursor-pointer hover:border-blue-500/50 hover:bg-slate-700/50' : ''
                 }`}
@@ -82,7 +82,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
                       onToggleSave(statId);
                     } else {
                       e.stopPropagation(); // Блокируем клик по родительскому блоку (самой характеристике)
-                      onRoll(`http://localhost:8000/characters/${character.id}/roll-check?action=${encodeURIComponent(`Спасбросок: ${statLabel}`)}&bonus=${totalSaveBonus}`);
+                      onRoll(`/characters/${character.id}/roll-check?action=${encodeURIComponent(`Спасбросок: ${statLabel}`)}&bonus=${totalSaveBonus}`);
                     }
                   }}
                   className={`flex items-center justify-between p-2 rounded transition-colors group ${
@@ -123,7 +123,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
                     if (isEditing) {
                       onToggleSkill(skill.id);
                     } else {
-                      onRoll(`http://localhost:8000/characters/${character.id}/roll-check?action=${encodeURIComponent(`Навык: ${skill.name}`)}&bonus=${totalBonus}`);
+                      onRoll(`/characters/${character.id}/roll-check?action=${encodeURIComponent(`Навык: ${skill.name}`)}&bonus=${totalBonus}`);
                     }
                   }} 
                   className={`flex items-center justify-between p-2 rounded transition-colors group ${

@@ -29,7 +29,7 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
     e.preventDefault();
     setLoading(true);
     try {
-      const response = await fetchWithAuth('http://localhost:8000/characters/', {
+      const response = await fetchWithAuth('/characters/', {
         method: 'POST',
         body: JSON.stringify(form)
       });

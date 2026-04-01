@@ -36,7 +36,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
   const updateField = async (field: string, value: any) => {
     setLocalChar(prev => ({ ...prev, [field]: value }));
     try {
-      const response = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}`, {
+      const response = await fetchWithAuth(`/characters/${localChar.id}`, {
         method: 'PATCH', body: JSON.stringify({ [field]: value }),
       });
       if (!response.ok) throw new Error('Ошибка сохранения');
@@ -73,7 +73,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
 
   const submitAttack = async (attackData: any) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}/attacks`, {
+      const res = await fetchWithAuth(`/characters/${localChar.id}/attacks`, {
         method: 'POST', body: JSON.stringify(attackData),
       });
       if (res.ok) {
@@ -85,7 +85,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
 
   const submitSpell = async (spellData: any) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}/spells`, {
+      const res = await fetchWithAuth(`/characters/${localChar.id}/spells`, {
         method: 'POST', body: JSON.stringify(spellData),
       });
       if (res.ok) {
@@ -98,7 +98,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
   const deleteItem = async (type: 'attacks' | 'spells' | 'features', id: number) => {
     if (!window.confirm('Точно удалить?')) return;
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}/${type}/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`/characters/${localChar.id}/${type}/${id}`, { method: 'DELETE' });
       if (res.ok) setLocalChar(prev => ({ ...prev, [type]: (prev[type] as any[]).filter((item: any) => item.id !== id) }));
     } catch (err: any) { if (err.message !== 'Unauthorized') alert('Ошибка удаления'); }
   };
@@ -110,7 +110,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
   const handleCastSpell = async (spellId: number, castLevel: number) => {
     setIsRolling(true);
     try {
-      const url = `http://localhost:8000/characters/${localChar.id}/spells/${spellId}/cast?cast_level=${castLevel}`;
+      const url = `/characters/${localChar.id}/spells/${spellId}/cast?cast_level=${castLevel}`;
       const response = await fetchWithAuth(url, { method: 'POST' });
       const data = await response.json();
 
@@ -137,7 +137,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
     setLocalChar(prev => ({ ...prev, current_hp: prev.max_hp, spell_slots: updatedSlots }));
 
     try {
-      await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}`, {
+      await fetchWithAuth(`/characters/${localChar.id}`, {
         method: 'PATCH', body: JSON.stringify({ current_hp: localChar.max_hp, spell_slots: updatedSlots }),
       });
     } catch (err: any) { if (err.message !== 'Unauthorized') console.error('Ошибка сохранения отдыха'); }
@@ -153,7 +153,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
 
   const submitFeature = async (featureData: any) => {
     try {
-      const res = await fetchWithAuth(`http://localhost:8000/characters/${localChar.id}/features`, {
+      const res = await fetchWithAuth(`/characters/${localChar.id}/features`, {
         method: 'POST', body: JSON.stringify(featureData),
       });
       if (res.ok) {
