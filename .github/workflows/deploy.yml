@@ -40,8 +40,8 @@ jobs:
             fi
             
             cd charnik_online
-            git remote set-url origin $REPO_URL
-            git pull origin main 
+            git fetch origin main
+            git reset --hard origin/main
             
             # Собираем полный файл .env
             echo "DOMAIN_NAME=$DOMAIN_NAME" > .env
@@ -55,5 +55,5 @@ jobs:
             echo "ALGORITHM=$ALGORITHM" >> .env
             echo "DB_ECHO=$DB_ECHO" >> .env
             
-            sudo docker compose down --remove-orphans
-            sudo docker compose up -d --build --remove-orphans
+            sudo docker-compose down --remove-orphans
+            sudo docker-compose up -d --build --remove-orphans
