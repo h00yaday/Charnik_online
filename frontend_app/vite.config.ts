@@ -1,14 +1,20 @@
 import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import tsconfigPaths from 'vite-tsconfig-paths' // Импортируем плагин путей
 
 // https://vite.dev/config/
 export default defineConfig({
-  // ... другие настройки
+  plugins: [
+    react(), 
+    tsconfigPaths() // Включаем плагины
+  ],
   server: {
-    host: true, // Обязательно! Чтобы Vite слушал на 0.0.0.0, а не только внутри localhost контейнера
+    host: true, 
     port: 5173,
     strictPort: true,
+    allowedHosts: ['charnik-online.tech'], // Разрешаем ваш домен .tech
     watch: {
-      usePolling: true, // Нужно для корректной работы hot reload внутри Docker на Windows/Linux
+      usePolling: true, 
     },
     hmr: {
       clientPort: 443, 
