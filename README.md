@@ -68,4 +68,4 @@ Make sure you have [Docker](https://www.docker.com/) and Docker Compose installe
    ```
    docker-compose up --build
    ```
-   3. Open your browser and navigate to `http://localhost:5173` to access the application. The API documentation is available at `http://localhost:8000/docs`.
+   3. Open your browser and navigate to `http://localhost` to access the application. The API documentation is available at `http://localhost:8000/docs`.
