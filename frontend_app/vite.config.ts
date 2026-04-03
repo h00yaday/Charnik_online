@@ -11,7 +11,8 @@ export default defineConfig({
       usePolling: true, // Нужно для корректной работы hot reload внутри Docker на Windows/Linux
     },
     hmr: {
-      clientPort: 80, // Говорим браузеру стучаться за обновлениями кода на порт 80 (к Nginx)
+      clientPort: 443, 
+      protocol: 'wss',
     },
   },
 })

@@ -1,0 +1,11 @@
+{$DOMAIN_NAME} {
+    # Проксируем API и отрезаем префикс /api (аналог proxy_pass со слэшем на конце)
+    handle_path /api/* {
+        reverse_proxy backend:8000
+    }
+
+    # Все остальные запросы идут на фронтенд
+    handle {
+        reverse_proxy frontend:5173
+    }
+}
