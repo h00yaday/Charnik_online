@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost/api';
+const BASE_URL = '/api';
 
 export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
   const url = endpoint.startsWith('http') ? endpoint : `${BASE_URL}${endpoint}`;
