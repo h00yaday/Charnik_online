@@ -19,6 +19,7 @@ const STAT_LABELS_SHORT: Record<string, string> = {
 
 export default function StatsTab({ character, profBonus, onToggleSkill, onToggleSave, onUpdateStat, onRoll }: Props) {
   const [isEditing, setIsEditing] = useState(false);
+  const [tempStats, setTempStats] = useState<Record<string, string>>({});
 
   return (
     <div>
@@ -59,23 +60,46 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
                 <div className="text-center mb-3">
                   <span className="text-xs font-black text-slate-500 tracking-widest block">{statLabel}</span>
                   <span className="text-4xl font-black text-slate-200 block drop-shadow-md">{formatMod(mod)}</span>
-                  {isEditing ? (
-                    <div className="mt-2 flex justify-center items-center gap-1.5 bg-slate-900 rounded-full px-2 py-0.5 mx-auto w-max border border-slate-700/50">
-                      <button onClick={(e) => { e.stopPropagation(); onUpdateStat(statId, score - 1); }} className="text-slate-500 hover:text-red-400 font-bold text-lg leading-none px-1.5">-</button>
-                      <span className="text-xs font-mono text-amber-400 w-5 text-center">{score}</span>
-                      <button onClick={(e) => { e.stopPropagation(); onUpdateStat(statId, score + 1); }} className="text-slate-500 hover:text-green-400 font-bold text-lg leading-none px-1.5">+</button>
-                    </div>
-                  ) : (
-                    <div className="mt-1 flex justify-center">
-                      <div className="bg-slate-950 px-2.5 py-0.5 rounded-full border border-slate-700/50">
-                        <span className="text-xs font-mono text-amber-500">{score}</span>
-                      </div>
-                    </div>
-                  )}
+                  {isEditing && (
+    <div className="mt-2 flex justify-center items-center gap-1.5 bg-slate-900 rounded-full px-2 py-0.5 mx-auto w-max border border-slate-700/50">
+      <button onClick={(e) => {
+        e.stopPropagation();
+        const newVal = score - 1;
+        onUpdateStat(statId, newVal);
+        setTempStats(prev => ({...prev, [statId]: String(newVal)}));
+      }} className="text-slate-500 hover:text-red-400 font-bold text-lg leading-none px-1.5">-</button>
+
+      <input
+        type="number"
+        value={tempStats[statId] !== undefined ? tempStats[statId] : score}
+        onChange={(e) => setTempStats(prev => ({ ...prev, [statId]: e.target.value }))}
+        onBlur={() => {
+          const val = tempStats[statId];
+          if (val !== undefined) {
+            const num = parseInt(val);
+            onUpdateStat(statId, isNaN(num) ? 0 : num); // Если оставили пустым, будет 0
+            // Очищаем локальный стейт, чтобы снова брать значение из пропсов
+            const newTemp = { ...tempStats };
+            delete newTemp[statId];
+            setTempStats(newTemp);
+          }
+        }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-transparent text-amber-400 w-8 text-center font-mono text-xs outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]"
+      />
+
+      <button onClick={(e) => {
+        e.stopPropagation();
+        const newVal = score + 1;
+        onUpdateStat(statId, newVal);
+        setTempStats(prev => ({...prev, [statId]: String(newVal)}));
+      }} className="text-slate-500 hover:text-green-400 font-bold text-lg leading-none px-1.5">+</button>
+    </div>
+  )}
                 </div>
-                
+
                 {/* Спасбросок */}
-                <div 
+                <div
                   onClick={(e) => {
                     if (isEditing) {
                       e.stopPropagation();
@@ -86,8 +110,8 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
                     }
                   }}
                   className={`flex items-center justify-between p-2 rounded transition-colors group ${
-                    isEditing 
-                      ? 'cursor-pointer hover:bg-slate-700/50 bg-slate-900/30' 
+                    isEditing
+                      ? 'cursor-pointer hover:bg-slate-700/50 bg-slate-900/30'
                       : 'cursor-pointer hover:bg-slate-700/80 bg-slate-900/50'
                   }`}
                   title={isEditing ? `Переключить владение спасброском ${statLabel}` : `Бросить Спасбросок: ${statLabel}`}

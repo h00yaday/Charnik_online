@@ -7,20 +7,21 @@ interface CharacterFormProps {
 }
 
 export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProps) {
+  // Добавляем `as number | string`, чтобы TypeScript разрешил хранить пустую строку
   const [form, setForm] = useState({
     name: '',
     race: 'Человек',
     character_class: 'Воин',
     background: '',
-    level: 1,
-    max_hp: 10,
-    armor_class: 10,
-    strength: 10,
-    dexterity: 10,
-    constitution: 10,
-    intelligence: 10,
-    wisdom: 10,
-    charisma: 10
+    level: 1 as number | string,
+    max_hp: 10 as number | string,
+    armor_class: 10 as number | string,
+    strength: 10 as number | string,
+    dexterity: 10 as number | string,
+    constitution: 10 as number | string,
+    intelligence: 10 as number | string,
+    wisdom: 10 as number | string,
+    charisma: 10 as number | string
   });
   
   const [loading, setLoading] = useState(false);
@@ -28,10 +29,26 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+
+    // Перед отправкой гарантированно превращаем все числа в Number, 
+    // а если поле осталось пустым (""), подставляем нули или единицы.
+    const payload = {
+      ...form,
+      level: Number(form.level) || 1,
+      max_hp: Number(form.max_hp) || 0,
+      armor_class: Number(form.armor_class) || 0,
+      strength: Number(form.strength) || 0,
+      dexterity: Number(form.dexterity) || 0,
+      constitution: Number(form.constitution) || 0,
+      intelligence: Number(form.intelligence) || 0,
+      wisdom: Number(form.wisdom) || 0,
+      charisma: Number(form.charisma) || 0
+    };
+
     try {
       const response = await fetchWithAuth('/characters/', {
         method: 'POST',
-        body: JSON.stringify(form)
+        body: JSON.stringify(payload)
       });
 
       if (response.ok) {
@@ -90,23 +107,23 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Уровень</label>
-            <input type="number" min="1" max="20" required value={form.level} onChange={e => setForm({...form, level: Number(e.target.value)})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 outline-none focus:border-amber-500 transition-colors text-center" />
+            <input type="number" min="1" max="20" required value={form.level} onChange={e => setForm({...form, level: e.target.value})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-slate-200 outline-none focus:border-amber-500 transition-colors text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
           </div>
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Макс ХП</label>
-              <input type="number" required value={form.max_hp} onChange={e => setForm({...form, max_hp: Number(e.target.value)})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-bold outline-none focus:border-emerald-500 transition-colors text-center" />
+              <input type="number" required value={form.max_hp} onChange={e => setForm({...form, max_hp: e.target.value})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-bold outline-none focus:border-emerald-500 transition-colors text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">КД (Броня)</label>
-              <input type="number" required value={form.armor_class} onChange={e => setForm({...form, armor_class: Number(e.target.value)})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-blue-400 font-bold outline-none focus:border-blue-500 transition-colors text-center" />
+              <input type="number" required value={form.armor_class} onChange={e => setForm({...form, armor_class: e.target.value})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-blue-400 font-bold outline-none focus:border-blue-500 transition-colors text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
             </div>
           </div>
         </div>
 
         {/* Блок характеристик */}
         <div className="pt-4 border-t border-slate-700">
-          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Базовые характеристики (Значения 1-20)</label>
+          <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">Базовые характеристики (Значения 1-30)</label>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
             {stats.map(stat => (
               <div key={stat.key} className="bg-slate-900 p-2 rounded-lg border border-slate-700/50">
@@ -114,8 +131,8 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
                 <input 
                   type="number" min="1" max="30" required 
                   value={(form as any)[stat.key]} 
-                  onChange={e => setForm({...form, [stat.key]: Number(e.target.value)})} 
-                  className="w-full bg-transparent text-center text-xl font-bold text-amber-400 outline-none" 
+                  onChange={e => setForm({...form, [stat.key]: e.target.value})} 
+                  className="w-full bg-transparent text-center text-xl font-bold text-amber-400 outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" 
                 />
               </div>
             ))}

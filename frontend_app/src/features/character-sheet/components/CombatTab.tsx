@@ -15,19 +15,30 @@ interface Props {
 export default function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC, onRoll, onAddAttack, onDeleteAttack }: Props) {
   // Состояния для режима редактирования КД
   const [isEditingAC, setIsEditingAC] = useState(false);
-  const [tempAC, setTempAC] = useState(character.armor_class);
+  const [tempAC, setTempAC] = useState<number | string>(character.armor_class); // <-- Добавлен тип string
 
-  // Синхронизируем локальный стейт, если КД обновился с сервера
   useEffect(() => {
     setTempAC(character.armor_class);
   }, [character.armor_class]);
 
   const handleSaveAC = () => {
-    if (tempAC !== character.armor_class) {
-      onUpdateAC(tempAC);
+    let numAC = typeof tempAC === 'string' ? parseInt(tempAC) : tempAC;
+    if (isNaN(numAC)) numAC = 0; // Если стерли все, ставим 0
+
+    if (numAC !== character.armor_class) {
+      onUpdateAC(numAC);
     }
+    setTempAC(numAC);
     setIsEditingAC(false);
   };
+
+  const decrementAC = () => setTempAC(prev => Math.max(0, (typeof prev === 'string' ? (parseInt(prev) || 0) : prev) - 1));
+  const incrementAC = () => setTempAC(prev => (typeof prev === 'string' ? (parseInt(prev) || 0) : prev) + 1);
+  // Синхронизируем локальный стейт, если КД обновился с сервера
+  useEffect(() => {
+    setTempAC(character.armor_class);
+  }, [character.armor_class]);
+
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -66,18 +77,23 @@ export default function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC
         <span className="text-sm text-slate-400 font-bold block mb-4 uppercase tracking-widest">Класс Доспеха</span>
         
         {isEditingAC ? (
-          <div className="flex items-center gap-4 bg-slate-900 p-3 rounded-2xl border border-slate-700">
-            <button onClick={() => setTempAC(Math.max(0, tempAC - 1))} className="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-red-400 hover:bg-slate-700 font-black text-xl transition-colors">-</button>
-            <span className="text-5xl font-black text-blue-400 w-16 text-center">{tempAC}</span>
-            <button onClick={() => setTempAC(tempAC + 1)} className="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-green-400 hover:bg-slate-700 font-black text-xl transition-colors">+</button>
-          </div>
-        ) : (
-          <div className="w-24 h-28 mx-auto bg-slate-900 border-2 border-slate-600 rounded-t-full rounded-b-xl flex items-center justify-center relative">
-            <span className="text-4xl font-black text-blue-400">{character.armor_class}</span>
-          </div>
-        )}
-      </div>
+    <div className="flex items-center gap-4 bg-slate-900 p-3 rounded-2xl border border-slate-700">
+      <button onClick={decrementAC} className="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-red-400 hover:bg-slate-700 font-black text-xl transition-colors">-</button>
+      
+      <input
+        type="number"
+        value={tempAC}
+        onChange={(e) => setTempAC(e.target.value)}
+        onKeyDown={(e) => e.key === 'Enter' && handleSaveAC()}
+        className="text-5xl font-black text-blue-400 w-24 text-center bg-transparent outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]"
+      />
 
+      <button onClick={incrementAC} className="w-10 h-10 rounded-full bg-slate-800 text-slate-400 hover:text-green-400 hover:bg-slate-700 font-black text-xl transition-colors">+</button>
+    </div>
+  ) : (
+    <span className="text-5xl font-black text-slate-200">{character.armor_class}</span>
+  )}
+      </div>
       {/* Оружие и Атаки */}
       <div className="lg:col-span-2 bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl">
         <div className="flex justify-between items-end mb-6 border-b border-slate-700 pb-2">

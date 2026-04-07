@@ -8,13 +8,13 @@ interface Props {
   profBonus: number;
   onLongRest: () => void;
   onShortRest: () => void;
-  onUpdateLevel: (newLevel: number) => void; // <-- НОВЫЙ ПРОПС
+  onUpdateLevel: (newLevel: number) => void;
 }
 
 export default function CharacterHeader({ character, onBack, profBonus, onLongRest, onShortRest, onUpdateLevel }: Props) {
   // Состояния для режима редактирования уровня
   const [isEditingLevel, setIsEditingLevel] = useState(false);
-  const [tempLevel, setTempLevel] = useState(character.level);
+  const [tempLevel, setTempLevel] = useState<number | string>(character.level);
 
   // Синхронизируем локальный стейт, если уровень обновился снаружи
   useEffect(() => {
@@ -22,12 +22,21 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
   }, [character.level]);
 
   const handleSaveLevel = () => {
-    if (tempLevel !== character.level) {
-      onUpdateLevel(tempLevel);
+    let numLevel = typeof tempLevel === 'string' ? parseInt(tempLevel) : tempLevel;
+    if (isNaN(numLevel) || numLevel < 1) numLevel = 1;
+    if (numLevel > 20) numLevel = 20;
+
+    if (numLevel !== character.level) {
+      onUpdateLevel(numLevel);
     }
+    setTempLevel(numLevel);
     setIsEditingLevel(false);
   };
 
+  const decrementLevel = () => setTempLevel(prev => Math.max(1, (typeof prev === 'string' ? (parseInt(prev) || 1) : prev) - 1));
+  const incrementLevel = () => setTempLevel(prev => Math.min(20, (typeof prev === 'string' ? (parseInt(prev) || 1) : prev) + 1));
+
+  // --- ВАЖНЫЕ ВЫЧИСЛЕНИЯ (ОНИ ПОТЕРЯЛИСЬ) ---
   // Высчитываем процент ХП для цвета полоски здоровья
   const hpPercentage = Math.round((character.current_hp / character.max_hp) * 100);
   let hpColor = 'bg-green-500';
@@ -36,6 +45,8 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
 
   const dexMod = getModifier(character.dexterity);
   const totalInitiative = dexMod + (character.initiative_bonus || 0);
+  // ------------------------------------------
+
   return (
     <div className="bg-slate-900 border-b border-slate-800 pt-6 pb-6 px-4 sticky top-0 z-40 shadow-xl">
       <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
@@ -53,24 +64,26 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
               
               {/* БЛОК УРОВНЯ */}
               {isEditingLevel ? (
-                <div className="flex items-center gap-2 bg-slate-800 rounded px-1 py-0.5 border border-slate-600">
-                  <button onClick={() => setTempLevel(Math.max(1, tempLevel - 1))} className="text-slate-400 hover:text-red-400 font-bold px-1">-</button>
-                  <span className="text-white font-bold w-4 text-center">{tempLevel}</span>
-                  <button onClick={() => setTempLevel(Math.min(20, tempLevel + 1))} className="text-slate-400 hover:text-green-400 font-bold px-1">+</button>
-                  <button onClick={handleSaveLevel} className="ml-2 text-xs text-blue-400 hover:text-blue-300 font-bold">ОК</button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 group">
-                   <span>Уровень {character.level}</span>
-                   <button 
-                     onClick={() => setIsEditingLevel(true)} 
-                     className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 hover:text-blue-400 transition-all px-1"
-                     title="Изменить уровень"
-                   >
-                     ✎
-                   </button>
-                </div>
-              )}
+              <div className="flex items-center gap-1 bg-slate-800 rounded px-1 py-0.5 border border-slate-600">
+                <button onClick={decrementLevel} className="text-slate-400 hover:text-red-400 font-bold px-2">-</button>
+                
+                <input
+                  type="number"
+                  value={tempLevel}
+                  onChange={(e) => setTempLevel(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSaveLevel()}
+                  className="text-white font-bold w-10 text-center bg-transparent outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]"
+                />
+
+                <button onClick={incrementLevel} className="text-slate-400 hover:text-green-400 font-bold px-2">+</button>
+                <button onClick={handleSaveLevel} className="ml-1 text-xs text-blue-400 hover:text-blue-300 font-bold px-1">ОК</button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <span>Уровень {character.level}</span>
+                <button onClick={() => setIsEditingLevel(true)} className="text-slate-400 hover:text-blue-400 font-bold text-xs px-1">Изменить</button>
+              </div>
+            )}
             </div>
             
           </div>
