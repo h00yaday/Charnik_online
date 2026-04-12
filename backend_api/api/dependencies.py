@@ -38,12 +38,12 @@ async def get_current_user(request: Request) -> CurrentUser:
         return CurrentUser(id=int(user_id))
 
     except jwt.ExpiredSignatureError as e:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Срок действия токена истек",
-            ) from e
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Срок действия токена истек",
+        ) from e
     except jwt.PyJWTError as e:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Не удалось проверить учетные данные",
-            ) from e
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Не удалось проверить учетные данные",
+        ) from e

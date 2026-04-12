@@ -17,6 +17,6 @@ async def roll_dice(request: RollRequest):
         return result
     except ValueError as e:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, 
+            status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(e),
         ) from e
