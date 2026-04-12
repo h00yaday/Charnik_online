@@ -11,14 +11,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Install uv and ruff
+      - name: Install uv
         uses: astral-sh/setup-uv@v5
         
       - name: Run Ruff Linter
-        run: uv run ruff check backend_api/
+        run: uvx ruff check backend_api/
         
       - name: Run Ruff Formatter check
-        run: uv run ruff format --check backend_api/
+        run: uvx ruff format --check backend_api/
         
   deploy:
     runs-on: ubuntu-latest
