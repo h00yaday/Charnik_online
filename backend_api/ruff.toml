@@ -1,0 +1,25 @@
+[tool.ruff]
+target-version = "py311"
+line-length = 88
+exclude = [
+    ".git",
+    "__pycache__",
+    "migrations", 
+    ".venv",
+    "venv",
+]
+
+[tool.ruff.lint]
+
+select = [
+    "E",  # Стандартные ошибки PEP8
+    "F",  # Ошибки логики (неиспользуемые импорты, переменные)
+    "I",  # isort (автоматическая сортировка импортов)
+    "B",  # flake8-bugbear (поиск потенциальных багов)
+    "UP", # pyupgrade (предлагает современный синтаксис Python 3.11+)
+]
+ignore = []
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
