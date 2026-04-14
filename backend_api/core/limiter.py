@@ -50,6 +50,7 @@ redis.call("EXPIRE", time_key, ttl)
 return allowed
 """
 
+
 class RateLimiter:
     def __init__(self, capacity: int, refill_amount: int, refill_period_ms: int):
         self.capacity = capacity
@@ -63,25 +64,25 @@ class RateLimiter:
             client_ip = forwarded_for.split(",")[0].strip()
         else:
             client_ip = request.client.host
-            
+
         key = f"rate_limit:ip:{client_ip}"
         now_ms = int(time.time() * 1000)
 
         allowed = await redis_client.eval(
             TOKEN_BUCKET_LUA,
-            1, 
+            1,
             key,
             self.capacity,
             self.refill_amount,
             self.refill_period_ms,
-            now_ms
+            now_ms,
         )
 
         if not allowed:
             raise HTTPException(
-                status_code=429, 
+                status_code=429,
                 detail=(
                     "Слишком много запросов. "
                     "Подождите немного перед следующей попыткой."
-                )
+                ),
             )

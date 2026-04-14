@@ -15,10 +15,10 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @router.post(
-    "/register", 
-    response_model=UserResponse, 
-    status_code=status.HTTP_201_CREATED, 
-    dependencies=[Depends(login_limiter)]
+    "/register",
+    response_model=UserResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(login_limiter)],
 )
 async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     result = await db.execute(select(User).where(User.username == user_in.username))

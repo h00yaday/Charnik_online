@@ -24,9 +24,7 @@ from services.combat_service import CombatService
 
 roller_limiter = RateLimiter(capacity=50, refill_amount=1, refill_period_ms=200)
 router = APIRouter(
-    prefix="/characters",
-    tags=["Characters"],
-    dependencies=[Depends(roller_limiter)]
+    prefix="/characters", tags=["Characters"], dependencies=[Depends(roller_limiter)]
 )
 
 
