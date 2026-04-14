@@ -9,3 +9,4 @@ PyJWT
 python-multipart
 alembic
 ruff
+redis>=5.0.0

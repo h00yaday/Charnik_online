@@ -5,6 +5,7 @@ from sqlalchemy.orm import selectinload
 from sqlalchemy.orm.attributes import flag_modified  # <-- ДОБАВИЛИ ДЛЯ ЯЧЕЕК
 
 from api.dependencies import CurrentUser, get_current_user
+from core.limiter import RateLimiter
 from db.database import get_db
 from db.models import Attack, Character, Feature, Spell  # <-- ДОБАВИЛИ FEATURE
 from db.repository import CharacterRepository
@@ -21,7 +22,12 @@ from schemas.schemas import (
 )
 from services.combat_service import CombatService
 
-router = APIRouter(prefix="/characters", tags=["Characters"])
+roller_limiter = RateLimiter(capacity=50, refill_amount=1, refill_period_ms=200)
+router = APIRouter(
+    prefix="/characters",
+    tags=["Characters"],
+    dependencies=[Depends(roller_limiter)]
+)
 
 
 @router.post("/", response_model=CharacterResponse, status_code=status.HTTP_201_CREATED)

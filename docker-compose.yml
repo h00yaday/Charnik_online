@@ -42,6 +42,8 @@ services:
     depends_on:
       db:
         condition: service_healthy 
+      redis:
+        condition: service_started
     env_file:
       - .env 
     volumes:
@@ -62,8 +64,20 @@ services:
     volumes:
       - ./frontend_app:/app
       - /app/node_modules
-      
+  
+  redis:
+    image: redis:alpine
+    container_name: dnd_redis
+    restart: always
+    expose:
+      - "6379"
+    env_file:
+      - .env
+    volumes:
+      - redis_data:/data
+
 volumes:
   pgdata:
   caddy_data:
   caddy_config:
+  redis_data:

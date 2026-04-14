@@ -6,7 +6,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-
+    REDIS_URL: str = "redis://redis:6379/0"
     ENVIRONMENT: str = "development"  # В продакшене установить "production"
     DB_ECHO: bool = True
 
