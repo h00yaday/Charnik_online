@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 DICE_PATTERN = r"^\s*(?:[+-]?\s*(?:\d+[dD]\d+|\d+)\s*)+$"
 USERNAME_PATTERN = r"^[A-Za-z0-9_]{3,50}$"

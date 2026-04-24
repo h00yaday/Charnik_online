@@ -59,8 +59,8 @@ export interface SpellCreatePayload {
   name: string;
   level: number;
   description: string;
-  damage_dice?: string;
-  damage_type?: string;
+  damage_dice?: string | null;
+  damage_type?: string | null;
   requires_attack_roll: boolean;
   spell_attack_bonus: number;
 }

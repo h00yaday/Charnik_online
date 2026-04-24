@@ -121,7 +121,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
       const newAttack = await fetchJsonWithAuth<Attack>(`/characters/${character.id}/attacks`, {
         method: 'POST', body: JSON.stringify(attackData),
       });
-      setLocalChar(prev => ({ ...prev, attacks: [...prev.attacks, newAttack] }));
+      setLocalChar(prev => ({ ...prev, attacks: [...(prev.attacks || []), newAttack] }));
     } catch (err: unknown) { if (!(err instanceof UnauthorizedError)) console.error(err); }
   }, [character.id]);
 
@@ -130,7 +130,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
       const newSpell = await fetchJsonWithAuth<Spell>(`/characters/${character.id}/spells`, {
         method: 'POST', body: JSON.stringify(spellData),
       });
-      setLocalChar(prev => ({ ...prev, spells: [...prev.spells, newSpell] }));
+      setLocalChar(prev => ({ ...prev, spells: [...(prev.spells || []), newSpell] }));
     } catch (err: unknown) { if (!(err instanceof UnauthorizedError)) console.error(err); }
   }, [character.id]);
 
@@ -197,7 +197,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
       const newFeature = await fetchJsonWithAuth<Feature>(`/characters/${character.id}/features`, {
         method: 'POST', body: JSON.stringify(featureData),
       });
-      setLocalChar(prev => ({ ...prev, features: [...prev.features, newFeature] }));
+      setLocalChar(prev => ({ ...prev, features: [...(prev.features || []), newFeature] }));
     } catch (err: unknown) { if (!(err instanceof UnauthorizedError)) console.error(err); }
   }, [character.id]);
 

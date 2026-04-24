@@ -108,7 +108,7 @@ function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC, onRoll, onAdd
           <button onClick={onAddAttack} className="text-amber-400 hover:text-amber-300 font-bold text-sm">+ Добавить атаку</button>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {character.attacks.map(attack => (
+          {(character.attacks || []).map(attack => (
             <div key={attack.id} className="bg-slate-900 rounded-xl p-4 border border-slate-700/50 flex justify-between items-center group hover:border-orange-500/50 transition-colors">
                <div>
                   <div className="flex items-center gap-2">

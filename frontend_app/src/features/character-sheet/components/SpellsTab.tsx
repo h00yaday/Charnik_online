@@ -95,13 +95,12 @@ export default function SpellsTab({ character, isRolling, onAddSpell, onDeleteSp
           </div>
         )}
       </div>
-
       {/* СПИСОК ЗАКЛИНАНИЙ */}
-      {character.spells.length === 0 ? (
+      {character.spells?.length === 0 ? (
         <p className="text-slate-500 italic text-center py-6 border-t border-slate-700/50 mt-4">Вы не знаете ни одного заклинания.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-          {character.spells.map(spell => (
+          {(character.spells || [])?.map(spell => (
             <div key={spell.id} className="bg-slate-900 rounded-xl p-4 border border-slate-700/50 hover:border-indigo-500/30 transition-colors flex flex-col justify-between">
               <div>
                 <div className="flex justify-between items-start mb-2">

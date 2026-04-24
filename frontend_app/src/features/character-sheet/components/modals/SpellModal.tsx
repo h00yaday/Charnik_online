@@ -12,10 +12,19 @@ export default function SpellModal({ onClose, onSubmit }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault(); setIsSubmitting(true);
-    await onSubmit(form);
-    setIsSubmitting(false); onClose();
+  e.preventDefault(); 
+  setIsSubmitting(true);
+  
+  const payload = {
+    ...form,
+    damage_dice: form.damage_dice.trim() || null,
+    damage_type: form.damage_type.trim() || null,
   };
+  
+  await onSubmit(payload);
+  setIsSubmitting(false); 
+  onClose();
+};
 
   return (
     <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">

@@ -63,7 +63,7 @@ export default function Auth({ onLogin }: AuthProps) {
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8">
-        <h2 className="text-3xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 mb-8">S
+        <h2 className="text-3xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 mb-8">
           {isLoginMode ? 'Вход в Таверну' : 'Новый Пользователь'}
         </h2>
 
