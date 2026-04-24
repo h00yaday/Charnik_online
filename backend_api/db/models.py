@@ -24,9 +24,7 @@ class Attack(Base):
     damage_dice: Mapped[str] = mapped_column(String(20))
     damage_type: Mapped[str] = mapped_column(String(50))
 
-    character_id: Mapped[int] = mapped_column(
-        ForeignKey("characters.id", ondelete="CASCADE")
-    )
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     character: Mapped["Character"] = relationship(back_populates="attacks")
 
 
@@ -38,16 +36,12 @@ class Spell(Base):
     level: Mapped[int] = mapped_column(default=0)
     description: Mapped[str] = mapped_column(String, nullable=True)
 
-    requires_attack_roll: Mapped[bool] = mapped_column(
-        default=False, server_default="false"
-    )
+    requires_attack_roll: Mapped[bool] = mapped_column(default=False, server_default="false")
     spell_attack_bonus: Mapped[int] = mapped_column(default=0, server_default="0")
     damage_dice: Mapped[str] = mapped_column(String(20), nullable=True)
     damage_type: Mapped[str] = mapped_column(String(50), nullable=True)
 
-    character_id: Mapped[int] = mapped_column(
-        ForeignKey("characters.id", ondelete="CASCADE")
-    )
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     character: Mapped["Character"] = relationship(back_populates="spells")
 
 
@@ -85,15 +79,9 @@ class Character(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id", ondelete="CASCADE"))
     owner: Mapped["User"] = relationship(back_populates="characters")
 
-    attacks: Mapped[list["Attack"]] = relationship(
-        back_populates="character", cascade="all, delete-orphan"
-    )
-    spells: Mapped[list["Spell"]] = relationship(
-        back_populates="character", cascade="all, delete-orphan"
-    )
-    features: Mapped[list["Feature"]] = relationship(
-        back_populates="character", cascade="all, delete-orphan"
-    )
+    attacks: Mapped[list["Attack"]] = relationship(back_populates="character", cascade="all, delete-orphan")
+    spells: Mapped[list["Spell"]] = relationship(back_populates="character", cascade="all, delete-orphan")
+    features: Mapped[list["Feature"]] = relationship(back_populates="character", cascade="all, delete-orphan")
 
 
 class Feature(Base):
@@ -108,7 +96,5 @@ class Feature(Base):
 
     modifiers: Mapped[dict] = mapped_column(JSON, default=dict, server_default="{}")
 
-    character_id: Mapped[int] = mapped_column(
-        ForeignKey("characters.id", ondelete="CASCADE")
-    )
+    character_id: Mapped[int] = mapped_column(ForeignKey("characters.id", ondelete="CASCADE"))
     character: Mapped["Character"] = relationship(back_populates="features")

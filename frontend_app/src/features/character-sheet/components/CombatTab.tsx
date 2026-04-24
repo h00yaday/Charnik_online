@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { memo, useCallback, useEffect, useState } from 'react';
 import type { Character } from '../../../types/character';
 import { formatMod } from '../../../utils/math';
 
@@ -12,7 +12,7 @@ interface Props {
   onDeleteAttack: (id: number) => void;
 }
 
-export default function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC, onRoll, onAddAttack, onDeleteAttack }: Props) {
+function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC, onRoll, onAddAttack, onDeleteAttack }: Props) {
   // Состояния для режима редактирования КД
   const [isEditingAC, setIsEditingAC] = useState(false);
   const [tempAC, setTempAC] = useState<number | string>(character.armor_class); // <-- Добавлен тип string
@@ -21,8 +21,8 @@ export default function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC
     setTempAC(character.armor_class);
   }, [character.armor_class]);
 
-  const handleSaveAC = () => {
-    let numAC = typeof tempAC === 'string' ? parseInt(tempAC) : tempAC;
+  const handleSaveAC = useCallback(() => {
+    let numAC = typeof tempAC === 'string' ? parseInt(tempAC, 10) : tempAC;
     if (isNaN(numAC)) numAC = 0; // Если стерли все, ставим 0
 
     if (numAC !== character.armor_class) {
@@ -30,22 +30,29 @@ export default function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC
     }
     setTempAC(numAC);
     setIsEditingAC(false);
-  };
+  }, [character.armor_class, onUpdateAC, tempAC]);
 
-  const decrementAC = () => setTempAC(prev => Math.max(0, (typeof prev === 'string' ? (parseInt(prev) || 0) : prev) - 1));
-  const incrementAC = () => setTempAC(prev => (typeof prev === 'string' ? (parseInt(prev) || 0) : prev) + 1);
-  // Синхронизируем локальный стейт, если КД обновился с сервера
-  useEffect(() => {
-    setTempAC(character.armor_class);
-  }, [character.armor_class]);
-
+  const decrementAC = useCallback(
+    () =>
+      setTempAC((prev) =>
+        Math.max(0, (typeof prev === 'string' ? (parseInt(prev, 10) || 0) : prev) - 1)
+      ),
+    []
+  );
+  const incrementAC = useCallback(
+    () => setTempAC((prev) => (typeof prev === 'string' ? (parseInt(prev, 10) || 0) : prev) + 1),
+    []
+  );
+  const hpPercent = character.max_hp > 0
+    ? Math.max(0, (character.current_hp / character.max_hp) * 100)
+    : 0;
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Хитпоинты */}
       <div className="bg-slate-800 rounded-2xl p-6 border border-slate-700 shadow-xl flex flex-col items-center justify-center relative overflow-hidden">
          <div className="absolute top-0 w-full h-2 bg-slate-900">
-           <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${Math.max(0, (character.current_hp / character.max_hp) * 100)}%` }}></div>
+           <div className="h-full bg-emerald-500 transition-all duration-500" style={{ width: `${hpPercent}%` }}></div>
          </div>
          <h3 className="text-slate-400 font-bold mb-4 uppercase tracking-widest text-sm">Хитпоинты</h3>
          <div className="flex items-center gap-6">
@@ -121,3 +128,5 @@ export default function CombatTab({ character, isRolling, onUpdateHp, onUpdateAC
     </div>
   );
 }
+
+export default memo(CombatTab);

@@ -1,3 +1,5 @@
+import type { SkillKey, StatKey } from '../types/character';
+
 // --- КОНСТАНТЫ D&D ---
 export const SKILLS = [
   { id: 'acrobatics', name: 'Акробатика', stat: 'dexterity' },
@@ -18,7 +20,7 @@ export const SKILLS = [
   { id: 'sleight_of_hand', name: 'Ловкость рук', stat: 'dexterity' },
   { id: 'stealth', name: 'Скрытность', stat: 'dexterity' },
   { id: 'survival', name: 'Выживание', stat: 'wisdom' },
-];
+] as const satisfies ReadonlyArray<{ id: SkillKey; name: string; stat: StatKey }>;
 export const STATS = [
   { id: 'strength', name: 'Сила' },
   { id: 'dexterity', name: 'Ловкость' },
@@ -26,4 +28,4 @@ export const STATS = [
   { id: 'intelligence', name: 'Интеллект' },
   { id: 'wisdom', name: 'Мудрость' },
   { id: 'charisma', name: 'Харизма' }
-];
+] as const satisfies ReadonlyArray<{ id: StatKey; name: string }>;

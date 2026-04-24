@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { FeatureCreatePayload } from '../../../../types/character';
+
+const SEARCH_DEBOUNCE_MS = 800;
+const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_MAX_SIZE = 40;
 
 interface Props { 
   onClose: () => void; 
-  onSubmit: (data: any) => Promise<void>; 
+  onSubmit: (data: FeatureCreatePayload) => Promise<void>; 
 }
 
 export default function FeatureModal({ onClose, onSubmit }: Props) {
@@ -17,8 +22,11 @@ export default function FeatureModal({ onClose, onSubmit }: Props) {
 
   // 2. Стейты для API Поиска
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [searchResults, setSearchResults] = useState<Array<Record<string, unknown>>>([]);
   const [isSearching, setIsSearching] = useState(false);
+  const searchCacheRef = useRef(new Map<string, { expiresAt: number; value: Array<Record<string, unknown>> }>());
+  const searchAbortRef = useRef<AbortController | null>(null);
+  const inFlightRef = useRef(new Map<string, Promise<Array<Record<string, unknown>>>>());
 
   // 3. Стейты для ручного добавления бонусов
   const [tempStat, setTempStat] = useState('strength');
@@ -55,46 +63,79 @@ export default function FeatureModal({ onClose, onSubmit }: Props) {
       setSearchResults([]); 
       return;
     }
+
+    const cached = searchCacheRef.current.get(searchQuery);
+    if (cached && cached.expiresAt > Date.now()) {
+      setSearchResults(cached.value);
+      return;
+    }
+
     const delay = setTimeout(async () => {
+      searchAbortRef.current?.abort();
+      const abortController = new AbortController();
+      searchAbortRef.current = abortController;
       setIsSearching(true);
       try {
-        // Делаем два надежных запроса параллельно
-        const [featsRes, bgRes] = await Promise.all([
-          fetch(`https://api.open5e.com/v1/feats/?search=${searchQuery}`),
-          fetch(`https://api.open5e.com/v1/backgrounds/?search=${searchQuery}`)
-        ]);
+        let request = inFlightRef.current.get(searchQuery);
+        if (!request) {
+          request = (async () => {
+            const [featsRes, bgRes] = await Promise.all([
+              fetch(`https://api.open5e.com/v1/feats/?search=${searchQuery}`, { signal: abortController.signal }),
+              fetch(`https://api.open5e.com/v1/backgrounds/?search=${searchQuery}`, { signal: abortController.signal })
+            ]);
+            const featsData = await featsRes.json();
+            const bgData = await bgRes.json();
+            return [
+              ...(featsData.results || []).map((item: Record<string, unknown>) => ({ ...item, route: 'Черта (Feat)' })),
+              ...(bgData.results || []).map((item: Record<string, unknown>) => ({ ...item, route: 'Предыстория' }))
+            ].slice(0, 10);
+          })();
+          inFlightRef.current.set(searchQuery, request);
+        }
 
-        const featsData = await featsRes.json();
-        const bgData = await bgRes.json();
+        const combined = await request;
+        inFlightRef.current.delete(searchQuery);
 
-        // Объединяем результаты и сразу задаем им правильный тип (source)
-        const combined = [
-          ...(featsData.results || []).map((item: any) => ({ ...item, route: 'Черта (Feat)' })),
-          ...(bgData.results || []).map((item: any) => ({ ...item, route: 'Предыстория' }))
-        ].slice(0, 10); // Берем топ-10 результатов
-
+        if (searchCacheRef.current.size >= CACHE_MAX_SIZE) {
+          const oldestKey = searchCacheRef.current.keys().next().value;
+          if (oldestKey) searchCacheRef.current.delete(oldestKey);
+        }
+        searchCacheRef.current.set(searchQuery, {
+          value: combined,
+          expiresAt: Date.now() + CACHE_TTL_MS,
+        });
         setSearchResults(combined);
       } catch (e) {
-        console.error("Ошибка поиска", e);
+        if (!(e instanceof DOMException && e.name === 'AbortError')) {
+          console.error("Ошибка поиска", e);
+        }
       } finally {
         setIsSearching(false);
       }
-    }, 500);
+    }, SEARCH_DEBOUNCE_MS);
 
-    return () => clearTimeout(delay);
+    return () => {
+      clearTimeout(delay);
+    };
   }, [searchQuery]);
 
+  useEffect(() => {
+    return () => {
+      searchAbortRef.current?.abort();
+    };
+  }, []);
+
   // Обработка клика по результату поиска
-  const handleSelectResult = (item: any) => {
+  const handleSelectResult = (item: Record<string, unknown>) => {
     // Текст описания в этих эндпоинтах лежит в поле desc
-    const description = item.desc || '';
+    const description = (item.desc as string | undefined) || '';
     
     // Пытаемся автоматически найти бонусы в тексте
     const extractedMods = extractModifiersFromText(description);
 
     setForm({
-      name: item.name,
-      source: item.route || 'Другое', // Тип мы уже задали при поиске
+      name: String(item.name || ''),
+      source: String(item.route || 'Другое'),
       description: description,
       // Если у нас уже были ручные бонусы, объединяем их с найденными (с приоритетом ручных)
       modifiers: { ...extractedMods, ...form.modifiers }

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'; 
 import type { Character } from '../../../types/character';
-import { getModifier } from '../../../utils/math';
+import { getModifier, toNum } from '../../../utils/math';
 
 interface Props {
   character: Character;
@@ -38,13 +38,15 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
 
   // --- ВАЖНЫЕ ВЫЧИСЛЕНИЯ (ОНИ ПОТЕРЯЛИСЬ) ---
   // Высчитываем процент ХП для цвета полоски здоровья
-  const hpPercentage = Math.round((character.current_hp / character.max_hp) * 100);
+  const hpPercentage = character.max_hp > 0
+    ? Math.round((character.current_hp / character.max_hp) * 100)
+    : 0;
   let hpColor = 'bg-green-500';
   if (hpPercentage <= 50) hpColor = 'bg-amber-500';
   if (hpPercentage <= 20) hpColor = 'bg-red-500';
 
   const dexMod = getModifier(character.dexterity);
-  const totalInitiative = dexMod + (character.initiative_bonus || 0);
+  const totalInitiative = dexMod + toNum(character.initiative_bonus);
   // ------------------------------------------
 
   return (

@@ -1,17 +1,25 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 DICE_PATTERN = r"^\s*(?:[+-]?\s*(?:\d+[dD]\d+|\d+)\s*)+$"
+USERNAME_PATTERN = r"^[A-Za-z0-9_]{3,50}$"
 
 
 class FeatureBase(BaseModel):
-    name: str
-    description: str
-    source: str = "Класс"
+    name: str = Field(min_length=1, max_length=100)
+    description: str = Field(min_length=1, max_length=5000)
+    source: str = Field(default="Класс", min_length=1, max_length=50)
     modifiers: dict[str, int] = Field(default_factory=dict)
 
 
 class FeatureCreate(FeatureBase):
-    pass
+    @model_validator(mode="after")
+    def validate_modifier_range(self):
+        for key, value in self.modifiers.items():
+            if not -10 <= value <= 10:
+                raise ValueError(
+                    f"Модификатор '{key}' должен быть в диапазоне от -10 до 10"
+                )
+        return self
 
 
 class FeatureResponse(FeatureBase):
@@ -21,12 +29,15 @@ class FeatureResponse(FeatureBase):
 
 
 class AttackBase(BaseModel):
-    name: str
-    attack_bonus: int = 0
+    name: str = Field(min_length=1, max_length=100)
+    attack_bonus: int = Field(default=0, ge=-50, le=50)
     damage_dice: str = Field(
-        pattern=DICE_PATTERN, json_schema_extra={"examples": ["1d8", "2d6+3"]}
+        min_length=1,
+        max_length=256,
+        pattern=DICE_PATTERN,
+        json_schema_extra={"examples": ["1d8", "2d6+3"]},
     )
-    damage_type: str
+    damage_type: str = Field(min_length=1, max_length=50)
 
 
 class AttackCreate(AttackBase):
@@ -40,20 +51,20 @@ class AttackResponse(AttackBase):
 
 
 class SpellBase(BaseModel):
-    name: str
-    level: int = 0
-    description: str | None = None
+    name: str = Field(min_length=1, max_length=100)
+    level: int = Field(default=0, ge=0, le=9)
+    description: str | None = Field(default=None, max_length=5000)
 
 
 class SpellCreate(BaseModel):
-    name: str
-    level: int = 0
-    description: str | None = None
+    name: str = Field(min_length=1, max_length=100)
+    level: int = Field(default=0, ge=0, le=9)
+    description: str | None = Field(default=None, max_length=5000)
 
     requires_attack_roll: bool = False
-    spell_attack_bonus: int = 0
-    damage_dice: str | None = None
-    damage_type: str | None = None
+    spell_attack_bonus: int = Field(default=0, ge=-50, le=50)
+    damage_dice: str | None = Field(default=None, max_length=256, pattern=DICE_PATTERN)
+    damage_type: str | None = Field(default=None, max_length=50)
 
 
 class SpellResponse(BaseModel):
@@ -69,34 +80,50 @@ class SpellResponse(BaseModel):
 
     character_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class SpellSlot(BaseModel):
+    total: int = Field(ge=0, le=99)
+    used: int = Field(ge=0, le=99)
+
+    @model_validator(mode="after")
+    def validate_slot_invariant(self):
+        if self.used > self.total:
+            raise ValueError("used cannot exceed total")
+        return self
 
 
 class CharacterBase(BaseModel):
-    name: str
-    level: int = 1
-    race: str = "Человек"
-    character_class: str = "Воин"
-    subclass: str | None = None
-    background: str | None = None
+    name: str = Field(min_length=1, max_length=100)
+    level: int = Field(default=1, ge=1, le=20)
+    race: str = Field(default="Человек", min_length=1, max_length=50)
+    character_class: str = Field(default="Воин", min_length=1, max_length=50)
+    subclass: str | None = Field(default=None, max_length=50)
+    background: str | None = Field(default=None, max_length=50)
 
-    strength: int = 10
-    dexterity: int = 10
-    constitution: int = 10
-    intelligence: int = 10
-    wisdom: int = 10
-    charisma: int = 10
+    strength: int = Field(default=10, ge=1, le=30)
+    dexterity: int = Field(default=10, ge=1, le=30)
+    constitution: int = Field(default=10, ge=1, le=30)
+    intelligence: int = Field(default=10, ge=1, le=30)
+    wisdom: int = Field(default=10, ge=1, le=30)
+    charisma: int = Field(default=10, ge=1, le=30)
 
-    armor_class: int = 10
-    max_hp: int = 10
-    current_hp: int = 10
-    speed: int = 30
-    initiative_bonus: int = 0
+    armor_class: int = Field(default=10, ge=0, le=50)
+    max_hp: int = Field(default=10, ge=1, le=999)
+    current_hp: int = Field(default=10, ge=0, le=999)
+    speed: int = Field(default=30, ge=0, le=120)
+    initiative_bonus: int = Field(default=0, ge=-20, le=20)
 
-    spell_slots: dict[str, dict[str, int]] = Field(default_factory=dict)
+    spell_slots: dict[str, SpellSlot] = Field(default_factory=dict)
     skills: dict[str, int] = Field(default_factory=dict)
     saving_throws: dict[str, int] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def validate_hp_invariant(self):
+        if self.current_hp > self.max_hp:
+            raise ValueError("current_hp cannot exceed max_hp")
+        return self
 
 
 class CharacterCreate(CharacterBase):
@@ -106,33 +133,85 @@ class CharacterCreate(CharacterBase):
 class CharacterResponse(CharacterBase):
     id: int
     owner_id: int
-    attacks: list[AttackResponse] = []
-    spells: list[SpellResponse] = []
-    features: list[FeatureResponse] = []
+    attacks: list[AttackResponse] = Field(default_factory=list)
+    spells: list[SpellResponse] = Field(default_factory=list)
+    features: list[FeatureResponse] = Field(default_factory=list)
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class CharacterListItem(BaseModel):
+    id: int
+    name: str
+    level: int
+    race: str
+    character_class: str
+    current_hp: int
+    max_hp: int
+    armor_class: int
 
     model_config = ConfigDict(from_attributes=True)
 
 
 class CharacterUpdate(BaseModel):
-    current_hp: int | None = None
-    max_hp: int | None = None
-    armor_class: int | None = None
-    level: int | None = None
+    current_hp: int | None = Field(default=None, ge=0, le=999)
+    max_hp: int | None = Field(default=None, ge=1, le=999)
+    armor_class: int | None = Field(default=None, ge=0, le=50)
+    level: int | None = Field(default=None, ge=1, le=20)
     skills: dict[str, int] | None = None
     saving_throws: dict[str, int] | None = None
-    spell_slots: dict[str, dict[str, int]] | None = None
+    spell_slots: dict[str, SpellSlot] | None = None
 
-    strength: int | None = None
-    dexterity: int | None = None
-    constitution: int | None = None
-    intelligence: int | None = None
-    wisdom: int | None = None
-    charisma: int | None = None
+    strength: int | None = Field(default=None, ge=1, le=30)
+    dexterity: int | None = Field(default=None, ge=1, le=30)
+    constitution: int | None = Field(default=None, ge=1, le=30)
+    intelligence: int | None = Field(default=None, ge=1, le=30)
+    wisdom: int | None = Field(default=None, ge=1, le=30)
+    charisma: int | None = Field(default=None, ge=1, le=30)
+
+    @model_validator(mode="after")
+    def validate_hp_invariant(self):
+        if (
+            self.current_hp is not None
+            and self.max_hp is not None
+            and self.current_hp > self.max_hp
+        ):
+            raise ValueError("current_hp cannot exceed max_hp")
+        return self
 
 
 class UserCreate(BaseModel):
-    username: str
-    password: str = Field(min_length=3, max_length=72)
+    username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
+    password: str = Field(min_length=8, max_length=72)
+    initiative_bonus: int = Field(default=0, ge=-10, le=20)
+    first_name: str = Field(min_length=1, max_length=255)
+    last_name: str = Field(min_length=1, max_length=255)
+    phone: str = Field(min_length=1, max_length=255)
+    address: str = Field(min_length=1, max_length=255)
+    city: str = Field(min_length=1, max_length=255)
+    state: str = Field(min_length=1, max_length=255)
+    zip_code: str = Field(min_length=1, max_length=255)
+    @model_validator(mode="after")
+    def validate_password_strength(self):
+        if not any(ch.isalpha() for ch in self.password) or not any(
+            ch.isdigit() for ch in self.password
+        ):
+            raise ValueError("Пароль должен содержать буквы и цифры")
+        return self
+    @field_validator("initiative_bonus")
+    @classmethod
+    def prevent_nan(cls, v):
+        try:
+            if v is None or str(v).lower() == "nan":
+                return 0
+            return int(v)
+        except ValueError:
+            return 0
+
+
+class UserLogin(BaseModel):
+    username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
+    password: str = Field(min_length=1, max_length=72)
 
 
 class UserResponse(BaseModel):

@@ -61,6 +61,8 @@ minio_data/
 *.swo
 .project
 .settings/
+.cursor/
+.cursorrules
 
 .DS_Store
 .DS_Store?

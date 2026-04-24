@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { fetchWithAuth } from '../../utils/api';
+import { ApiError, fetchWithAuth } from '../../utils/api';
 
 interface AuthProps {
   onLogin: () => void;
@@ -49,8 +49,12 @@ export default function Auth({ onLogin }: AuthProps) {
         setError('Регистрация успешна! Теперь войдите.');
         setPassword('');
       }
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof ApiError) {
+        setError(err.detail);
+        return;
+      }
+      setError(err instanceof Error ? err.message : 'Произошла ошибка');
     } finally {
       setIsLoading(false);
     }
@@ -59,8 +63,7 @@ export default function Auth({ onLogin }: AuthProps) {
   return (
     <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
       <div className="max-w-md w-full bg-slate-800 rounded-2xl shadow-2xl border border-slate-700 p-8">
-        <h2 className="text-3xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 mb-8">
-          {/* ИСПРАВЛЕНО ЗДЕСЬ */}
+        <h2 className="text-3xl font-extrabold text-center text-transparent bg-clip-text bg-gradient-to-r from-red-500 to-orange-400 mb-8">S
           {isLoginMode ? 'Вход в Таверну' : 'Новый Пользователь'}
         </h2>
 
@@ -88,7 +91,7 @@ export default function Auth({ onLogin }: AuthProps) {
             <input
               type="password"
               required
-              minLength={3}
+              minLength={12}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-slate-200 outline-none transition-all"

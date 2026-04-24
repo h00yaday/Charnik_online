@@ -1,25 +1,25 @@
 import { useState } from 'react';
-import type { Character } from '../../../types/character';
+import type { Character, SkillKey, StatKey } from '../../../types/character';
 import { SKILLS, STATS } from '../../../constants/dnd';
-import { getModifier, formatMod } from '../../../utils/math';
+import { getModifier, formatMod, toNum } from '../../../utils/math';
 
 interface Props {
   character: Character;
   profBonus: number;
-  onToggleSkill: (skillId: string) => void;
-  onToggleSave: (statId: string) => void;
-  onUpdateStat: (statId: string, value: number) => void;
+  onToggleSkill: (skillId: SkillKey) => void;
+  onToggleSave: (statId: StatKey) => void;
+  onUpdateStat: (statId: StatKey, value: number) => void;
   onRoll: (url: string) => void; // <--- ДОБАВИЛИ НОВЫЙ ПРОПС
 }
 
-const STAT_LABELS_SHORT: Record<string, string> = {
+const STAT_LABELS_SHORT: Record<StatKey, string> = {
   strength: 'СИЛ', dexterity: 'ЛОВ', constitution: 'ТЕЛ',
   intelligence: 'ИНТ', wisdom: 'МУД', charisma: 'ХАР'
 };
 
 export default function StatsTab({ character, profBonus, onToggleSkill, onToggleSave, onUpdateStat, onRoll }: Props) {
   const [isEditing, setIsEditing] = useState(false);
-  const [tempStats, setTempStats] = useState<Record<string, string>>({});
+  const [tempStats, setTempStats] = useState<Partial<Record<StatKey, string>>>({});
 
   return (
     <div>
@@ -42,7 +42,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
         <div className="lg:col-span-5 grid grid-cols-2 gap-4">
           {STATS.map(stat => {
             const statId = stat.id;
-            const score = character[statId as keyof Character] as number;
+            const score = toNum(character[statId]);
             const mod = getModifier(score);
             const statLabel = STAT_LABELS_SHORT[statId];
             const profLevelSave = character.saving_throws[statId] || 0;
@@ -134,7 +134,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
           <h3 className="text-xl font-bold text-slate-300 mb-5 border-b border-slate-700 pb-3">Навыки</h3>
           <div className="space-y-1.5">
             {SKILLS.map(skill => {
-              const statScore = character[skill.stat as keyof Character] as number;
+              const statScore = character[skill.stat];
               const mod = getModifier(statScore);
               const profLevel = character.skills[skill.id] || 0;
               const totalBonus = mod + (profLevel * profBonus);
