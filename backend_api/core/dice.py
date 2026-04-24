@@ -1,21 +1,32 @@
 import random
 import re
 
+MAX_NOTATION_LENGTH = 256
+MAX_TERMS = 50
+ALLOWED_PATTERN = re.compile(r"^[\d\+d\-]+$")
+TERM_PATTERN = re.compile(r"([+-])((?:\d+)?d\d+|\d+)")
+
 
 def parse_and_roll(dice_notation: str) -> dict:
-    clean_notation = dice_notation.lower().replace(" ", "")
+    if len(dice_notation) > MAX_NOTATION_LENGTH:
+        raise ValueError("Формула слишком длинная.")
 
-    if not re.match(r"^[\d\+d\-]+$", clean_notation):
+    clean_notation = dice_notation.lower().replace(" ", "")
+    if not clean_notation:
+        raise ValueError("Формула не может быть пустой.")
+
+    if not ALLOWED_PATTERN.match(clean_notation):
         raise ValueError("Недопустимые символы в формуле.")
 
     if clean_notation[0] not in "+-":
         clean_notation = "+" + clean_notation
 
-    pattern = r"([+-])(\d+d\d+|\d+)"
-    matches = re.findall(pattern, clean_notation)
+    matches = TERM_PATTERN.findall(clean_notation)
 
     if not matches:
         raise ValueError("Формула не распознана.")
+    if len(matches) > MAX_TERMS:
+        raise ValueError("Слишком много элементов в формуле.")
 
     total = 0
     all_rolls = []
@@ -25,12 +36,12 @@ def parse_and_roll(dice_notation: str) -> dict:
         multiplier = 1 if sign == "+" else -1
 
         if "d" in value:
-            num_dice, dice_sides = map(int, value.split("d"))
+            num_dice_raw, dice_sides_raw = value.split("d", maxsplit=1)
+            num_dice = int(num_dice_raw) if num_dice_raw else 1
+            dice_sides = int(dice_sides_raw)
 
             if num_dice > 100 or dice_sides > 1000:
-                raise ValueError(
-                    "Слишком много кубиков (макс. 100) или граней (макс. 1000)!"
-                )
+                raise ValueError("Слишком много кубиков (макс. 100) или граней (макс. 1000)!")
             if num_dice <= 0 or dice_sides <= 0:
                 raise ValueError("Количество кубиков и граней должно быть больше 0.")
 
@@ -38,9 +49,7 @@ def parse_and_roll(dice_notation: str) -> dict:
             sum_rolls = sum(current_rolls) * multiplier
             total += sum_rolls
 
-            all_rolls.append(
-                {"dice": f"{sign}{value}", "rolls": current_rolls, "sum": sum_rolls}
-            )
+            all_rolls.append({"dice": f"{sign}{value}", "rolls": current_rolls, "sum": sum_rolls})
         else:
             mod = int(value) * multiplier
             total_modifier += mod

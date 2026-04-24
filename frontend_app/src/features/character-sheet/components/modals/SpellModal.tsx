@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import type { SpellCreatePayload } from '../../../../types/character';
 
-interface Props { onClose: () => void; onSubmit: (data: any) => Promise<void>; }
+interface Props { onClose: () => void; onSubmit: (data: SpellCreatePayload) => Promise<void>; }
 
 export default function SpellModal({ onClose, onSubmit }: Props) {
   // Добавили новые поля в начальный стейт

@@ -1,8 +1,22 @@
-export const getModifier = (score: number) => Math.floor((score - 10) / 2);
+export function getModifier(score: number): number {
+  const num = Number(score);
+  if (isNaN(num)) return 0;
+  return Math.floor((num - 10) / 2);
+}
 
-export const formatMod = (mod?: number | null) => {
+export function formatMod(mod?: number | null): string {
   if (mod === undefined || mod === null || isNaN(mod)) return "+0";
   return mod >= 0 ? `+${mod}` : mod.toString();
 };
 
-export const getProfBonus = (level: number) => Math.ceil(level / 4) + 1;
+export function getProfBonus(level: number): number {
+  return Math.ceil(level / 4) + 1;
+}
+export function toNum(val: any): number {
+  const parsed = Number(val);
+  return isNaN(parsed) ? 0 : parsed;
+};
+
+export function getInitiative(dex: number | undefined): number {
+  return Math.floor((toNum(dex) - 10) / 2);
+};

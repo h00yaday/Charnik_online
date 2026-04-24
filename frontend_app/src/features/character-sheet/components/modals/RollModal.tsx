@@ -1,6 +1,7 @@
 import { formatMod } from '../../../../utils/math';
+import type { RollResult } from '../../../../types/character';
 
-interface Props { result: any; onClose: () => void; }
+interface Props { result: RollResult | null; onClose: () => void; }
 
 export default function RollModal({ result, onClose }: Props) {
   if (!result) return null;
@@ -32,7 +33,7 @@ export default function RollModal({ result, onClose }: Props) {
             </div>
           )}
           {result.effect && (
-            <div className="bg-indigo-950/50 rounded-2xl p-4 border border-indigo-900/30 text-center">
+            <div className="bg-indigo-950/50 rounded-2xl p-4 border border-indigo-900/30 text-center">  
               <p className="text-sm text-indigo-300 font-bold">{result.effect}</p>
             </div>
           )}

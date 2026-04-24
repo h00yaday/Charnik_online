@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { fetchWithAuth } from '../../../utils/api';
+import type { StatKey } from '../../../types/character';
 
 interface CharacterFormProps {
   onCancel: () => void;
@@ -7,21 +8,36 @@ interface CharacterFormProps {
 }
 
 export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProps) {
-  // Добавляем `as number | string`, чтобы TypeScript разрешил хранить пустую строку
-  const [form, setForm] = useState({
+  type FormState = {
+    name: string;
+    race: string;
+    character_class: string;
+    background: string;
+    level: number | string;
+    max_hp: number | string;
+    armor_class: number | string;
+    strength: number | string;
+    dexterity: number | string;
+    constitution: number | string;
+    intelligence: number | string;
+    wisdom: number | string;
+    charisma: number | string;
+  };
+
+  const [form, setForm] = useState<FormState>({
     name: '',
     race: 'Человек',
     character_class: 'Воин',
     background: '',
-    level: 1 as number | string,
-    max_hp: 10 as number | string,
-    armor_class: 10 as number | string,
-    strength: 10 as number | string,
-    dexterity: 10 as number | string,
-    constitution: 10 as number | string,
-    intelligence: 10 as number | string,
-    wisdom: 10 as number | string,
-    charisma: 10 as number | string
+    level: 1,
+    max_hp: 10,
+    armor_class: 10,
+    strength: 10,
+    dexterity: 10,
+    constitution: 10,
+    intelligence: 10,
+    wisdom: 10,
+    charisma: 10
   });
   
   const [loading, setLoading] = useState(false);
@@ -30,20 +46,24 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
     e.preventDefault();
     setLoading(true);
 
-    // Перед отправкой гарантированно превращаем все числа в Number, 
-    // а если поле осталось пустым (""), подставляем нули или единицы.
+    // Гарантированно все числа преобразуются в Number и валидируются
     const payload = {
-      ...form,
-      level: Number(form.level) || 1,
-      max_hp: Number(form.max_hp) || 0,
-      armor_class: Number(form.armor_class) || 0,
-      strength: Number(form.strength) || 0,
-      dexterity: Number(form.dexterity) || 0,
-      constitution: Number(form.constitution) || 0,
-      intelligence: Number(form.intelligence) || 0,
-      wisdom: Number(form.wisdom) || 0,
-      charisma: Number(form.charisma) || 0
+      name: form.name.trim(),
+      race: form.race.trim(),
+      character_class: form.character_class.trim(),
+      background: form.background.trim(),
+      level: Math.max(1, Math.min(20, Number(form.level) || 1)),
+      max_hp: Math.max(1, Math.min(999, Number(form.max_hp) || 10)),
+      armor_class: Math.max(0, Math.min(50, Number(form.armor_class) || 10)),
+      strength: Math.max(1, Math.min(30, Number(form.strength) || 10)),
+      dexterity: Math.max(1, Math.min(30, Number(form.dexterity) || 10)),
+      constitution: Math.max(1, Math.min(30, Number(form.constitution) || 10)),
+      intelligence: Math.max(1, Math.min(30, Number(form.intelligence) || 10)),
+      wisdom: Math.max(1, Math.min(30, Number(form.wisdom) || 10)),
+      charisma: Math.max(1, Math.min(30, Number(form.charisma) || 10))
     };
+    
+    console.log('FORM DEBUG:', { form, payload });
 
     try {
       const response = await fetchWithAuth('/characters/', {
@@ -57,9 +77,9 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
         const errorData = await response.json();
         alert(errorData.detail || 'Ошибка создания персонажа');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      if (err.message !== 'Unauthorized') {
+      if (!(err instanceof Error) || err.message !== 'Unauthorized') {
         alert('Не удалось подключиться к серверу');
       }
     } finally {
@@ -67,7 +87,7 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
     }
   };
 
-  const stats = [
+  const stats: Array<{ key: StatKey; label: string }> = [
     { key: 'strength', label: 'СИЛ' }, { key: 'dexterity', label: 'ЛОВ' },
     { key: 'constitution', label: 'ТЕЛ' }, { key: 'intelligence', label: 'ИНТ' },
     { key: 'wisdom', label: 'МУД' }, { key: 'charisma', label: 'ХАР' }
@@ -112,7 +132,7 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
           <div className="grid grid-cols-2 gap-2">
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Макс ХП</label>
-              <input type="number" required value={form.max_hp} onChange={e => setForm({...form, max_hp: e.target.value})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-bold outline-none focus:border-emerald-500 transition-colors text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
+              <input type="number" min="1" required value={form.max_hp} onChange={e => setForm({...form, max_hp: e.target.value})} className="w-full p-3 bg-slate-900 border border-slate-700 rounded-lg text-emerald-400 font-bold outline-none focus:border-emerald-500 transition-colors text-center [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" />
             </div>
             <div>
               <label className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">КД (Броня)</label>
@@ -130,7 +150,7 @@ export default function CharacterForm({ onCancel, onSuccess }: CharacterFormProp
                 <label className="block text-[10px] text-center text-slate-500 font-bold mb-1">{stat.label}</label>
                 <input 
                   type="number" min="1" max="30" required 
-                  value={(form as any)[stat.key]} 
+                  value={form[stat.key]}
                   onChange={e => setForm({...form, [stat.key]: e.target.value})} 
                   className="w-full bg-transparent text-center text-xl font-bold text-amber-400 outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]" 
                 />

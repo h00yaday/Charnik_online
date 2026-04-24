@@ -1,10 +1,11 @@
 import random
 
-from fastapi import HTTPException
 from sqlalchemy.orm.attributes import flag_modified
 
 from core.dice import parse_and_roll
 from db.models import Attack, Character, Spell
+from services.character_service import CharacterService
+from services.domain_exceptions import ValidationDomainError
 
 
 class CombatService:
@@ -20,10 +21,7 @@ class CombatService:
         try:
             damage_result = parse_and_roll(attack.damage_dice)
         except ValueError as e:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Ошибка в формуле кубиков атаки: {e}",
-            ) from e
+            raise ValidationDomainError(f"Ошибка в формуле кубиков атаки: {e}") from e
 
         return {
             "action": f"Атака: {attack.name}",
@@ -43,22 +41,30 @@ class CombatService:
         }
 
     @staticmethod
-    def process_spell_cast(
-        spell: Spell, character: Character, cast_level: int | None = None
-    ) -> dict:
+    def process_spell_cast(spell: Spell, character: Character, cast_level: int | None = None) -> dict:
         """Обрабатывает применение заклинания и расход ячеек"""
-        actual_cast_level = cast_level if cast_level is not None else spell.level
-        slots = character.spell_slots or {}
+        try:
+            actual_cast_level = CharacterService.validate_cast_level(
+                cast_level if cast_level is not None else spell.level, spell.level
+            )
+            slots = CharacterService.normalize_character_patch(
+                {"spell_slots": character.spell_slots or {}}
+            )["spell_slots"]
+        except ValidationDomainError as e:
+            raise ValidationDomainError(str(e)) from e
         level_key = str(actual_cast_level)
 
         # 1. Логика расхода ячеек (если это не заговор)
         if actual_cast_level > 0:
-            slot_data = slots.get(level_key, {"total": 0, "used": 0})
+            slot_data = slots.get(level_key)
+            if slot_data is None:
+                raise ValidationDomainError(
+                    f"Нет доступных ячеек {actual_cast_level} уровня!"
+                )
 
             if slot_data["total"] - slot_data["used"] <= 0:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Нет доступных ячеек {actual_cast_level} уровня!",
+                raise ValidationDomainError(
+                    f"Нет доступных ячеек {actual_cast_level} уровня!"
                 )
 
             slot_data["used"] += 1
@@ -70,9 +76,7 @@ class CombatService:
 
         # 2. Формирование ответа
         spell_slots_remaining = (
-            slots[level_key]["total"] - slots[level_key]["used"]
-            if actual_cast_level > 0
-            else "Бесконечно (заговор)"
+            slots[level_key]["total"] - slots[level_key]["used"] if actual_cast_level > 0 else "Бесконечно (заговор)"
         )
 
         response_data = {
@@ -102,9 +106,8 @@ class CombatService:
                     "type": spell.damage_type,
                 }
             except ValueError as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Ошибка в формуле кубиков урона: {e}",
+                raise ValidationDomainError(
+                    f"Ошибка в формуле кубиков урона: {e}"
                 ) from e
 
         return response_data
@@ -136,15 +139,12 @@ class CombatService:
                     "type": getattr(spell, "damage_type", "Магический"),
                 }
             except ValueError as e:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Ошибка в формуле кубиков урона: {e}",
+                raise ValidationDomainError(
+                    f"Ошибка в формуле кубиков урона: {e}"
                 ) from e
 
         if not getattr(spell, "requires_attack_roll", False) and not damage_dice:
-            response_data["effect"] = (
-                "Заклинание применено (без бросков урона/попадания)"
-            )
+            response_data["effect"] = "Заклинание применено (без бросков урона/попадания)"
 
         return response_data
 

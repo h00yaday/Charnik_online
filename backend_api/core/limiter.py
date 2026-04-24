@@ -2,6 +2,8 @@ import time
 
 from fastapi import HTTPException, Request
 
+from core.config import settings
+
 # Тот самый Lua-скрипт (Token Bucket)
 TOKEN_BUCKET_LUA = """
 local key = KEYS[1]
@@ -56,16 +58,24 @@ class RateLimiter:
         self.capacity = capacity
         self.refill_amount = refill_amount
         self.refill_period_ms = refill_period_ms
+        self.trusted_proxy_ips = {ip.strip() for ip in settings.TRUSTED_PROXY_IPS.split(",") if ip.strip()}
+
+    def _get_client_ip(self, request: Request) -> str:
+        direct_ip = request.client.host if request.client else "unknown"
+        forwarded_for = request.headers.get("X-Forwarded-For")
+
+        # Trust forwarded chain only when request came from explicitly trusted proxy.
+        if forwarded_for and self.trusted_proxy_ips and direct_ip in self.trusted_proxy_ips:
+            return forwarded_for.split(",")[0].strip()
+        return direct_ip
 
     async def __call__(self, request: Request):
         redis_client = request.app.state.redis
-        forwarded_for = request.headers.get("X-Forwarded-For")
-        if forwarded_for:
-            client_ip = forwarded_for.split(",")[0].strip()
-        else:
-            client_ip = request.client.host
+        client_ip = self._get_client_ip(request)
+        route_path = request.url.path
+        scope = getattr(request.scope.get("route"), "name", None) or route_path
 
-        key = f"rate_limit:ip:{client_ip}"
+        key = f"rate_limit:{scope}:{client_ip}"
         now_ms = int(time.time() * 1000)
 
         allowed = await redis_client.eval(
@@ -81,8 +91,5 @@ class RateLimiter:
         if not allowed:
             raise HTTPException(
                 status_code=429,
-                detail=(
-                    "Слишком много запросов. "
-                    "Подождите немного перед следующей попыткой."
-                ),
+                detail=("Слишком много запросов. Подождите немного перед следующей попыткой."),
             )

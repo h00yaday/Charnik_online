@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type MouseEvent } from 'react';
 import Auth from './features/auth/Auth';
 import Tavern from './features/tavern/Tavern';
 import CharacterSheet from './features/character-sheet/CharacterSheet';
 import type { Character } from './types/character';
-import { fetchWithAuth } from './utils/api';
+import { ApiError, fetchWithAuth, setNotifyHandler, setUnauthorizedHandler } from './utils/api';
 
 export default function App() {
   // Теперь мы просто храним статус авторизации
@@ -11,22 +11,25 @@ export default function App() {
   const [characters, setCharacters] = useState<Character[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
+  const [notification, setNotification] = useState<string | null>(null);
 
   useEffect(() => {
-    const handleUnauthorized = () => {
-      // Выбрасываем пользователя ТОЛЬКО если он думал, что авторизован
-      if (isAuthenticated) {
-        alert('Сессия истекла или недействительна. Пожалуйста, войдите снова.');
-        setIsAuthenticated(false);
-        setSelectedCharacter(null); // Закрываем чарник, если он был открыт
-      }
-    };
-    // Подписываемся на событие
-    window.addEventListener('unauthorized', handleUnauthorized);
-    
-    // Очищаем слушатель, если компонент будет удален
-    return () => window.removeEventListener('unauthorized', handleUnauthorized);
-  }, [isAuthenticated]); // Зависимость гарантирует, что мы видим актуальный стейт
+    setUnauthorizedHandler(() => {
+      setIsAuthenticated(prev => {
+        if (prev) {
+          alert('Сессия истекла или недействительна. Пожалуйста, войдите снова.');
+        }
+        return false;
+      });
+      setSelectedCharacter(null);
+    });
+    return () => setUnauthorizedHandler(null);
+  }, []);
+
+  useEffect(() => {
+    setNotifyHandler((message) => setNotification(message));
+    return () => setNotifyHandler(null);
+  }, []);
 
   const fetchCharacters = async () => {
     setLoading(true);
@@ -37,7 +40,11 @@ export default function App() {
         setIsAuthenticated(true);
       }
     } catch (err) {
-      console.error("Ошибка загрузки персонажей:", err); 
+      if (err instanceof ApiError) {
+        setNotification(err.detail);
+      } else {
+        console.error("Ошибка загрузки персонажей:", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -60,7 +67,7 @@ export default function App() {
     }
   };
 
-  const deleteCharacter = async (e: any, id: number) => {
+  const deleteCharacter = async (e: MouseEvent, id: number) => {
     e.stopPropagation();
     if (!window.confirm('Вы уверены, что хотите удалить этого персонажа навсегда?')) return;
     try {
@@ -70,7 +77,7 @@ export default function App() {
       if (res.ok) {
         setCharacters(prev => prev.filter(c => c.id !== id));
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Ошибка удаления', err);
     }
   };
@@ -96,13 +103,21 @@ export default function App() {
   }
 
   return (
-    <Tavern
-      characters={characters}
-      loading={loading}
-      onSelectCharacter={setSelectedCharacter}
-      onDeleteCharacter={deleteCharacter}
-      onRefresh={fetchCharacters}
-      onLogout={handleLogout}
-    />
+    <>
+      {notification && (
+        <div className="fixed top-4 right-4 z-50 rounded-lg border border-amber-500/40 bg-slate-900 px-4 py-2 text-sm text-amber-300 shadow-lg">
+          {notification}
+          <button className="ml-3 text-slate-400 hover:text-slate-200" onClick={() => setNotification(null)}>✕</button>
+        </div>
+      )}
+      <Tavern
+        characters={characters}
+        loading={loading}
+        onSelectCharacter={setSelectedCharacter}
+        onDeleteCharacter={deleteCharacter}
+        onRefresh={fetchCharacters}
+        onLogout={handleLogout}
+      />
+    </>
   );
 }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import type { AttackCreatePayload } from '../../../../types/character';
 
-interface Props { onClose: () => void; onSubmit: (data: any) => Promise<void>; }
+interface Props { onClose: () => void; onSubmit: (data: AttackCreatePayload) => Promise<void>; }
 
 export default function AttackModal({ onClose, onSubmit }: Props) {
   const [form, setForm] = useState({ name: '', attack_bonus: 0, damage_dice: '1d8', damage_type: 'Рубящий' });
