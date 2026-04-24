@@ -31,6 +31,7 @@ The application is actively evolving. Below are the key features planned for fut
 - [ ]  **Conditions & Inspiration:** Dedicated UI trackers for status effects (e.g., Poisoned, Grappled) and Heroic Inspiration.
 - [ ]  **Death Saving Throws:** Integrated counter for death saves when a character drops to 0 HP.
 - [ ]  **Rest Mechanics:** Automated recovery of HP and Hit Dice during Short and Long Rests.
+- [ ]  Add editable movespeed
 
 ### Advanced Features & Multiplayer
 
