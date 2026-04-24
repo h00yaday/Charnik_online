@@ -4,8 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
-from db.models import Character
-from db.models import User
+from db.models import Character, User
 from services.domain_exceptions import ValidationDomainError
 
 ALLOWED_FEATURE_MODIFIER_FIELDS = {
@@ -38,15 +37,15 @@ class CharacterService:
         if character.max_hp is None or character.max_hp == 0:
             character.max_hp = 10
         character.max_hp = max(1, min(character.max_hp, 999))
-        
+
         if character.current_hp is None:
             character.current_hp = 0
         character.current_hp = min(max(0, character.current_hp), character.max_hp)
-        
+
         if character.armor_class is None or character.armor_class == 0:
             character.armor_class = 10
         character.armor_class = max(0, min(character.armor_class, 50))
-        
+
         for field in (
             "strength",
             "dexterity",
@@ -66,15 +65,11 @@ class CharacterService:
         normalized: dict[str, dict[str, int]] = {}
         for level, slot in (spell_slots or {}).items():
             if not isinstance(slot, dict) or "total" not in slot or "used" not in slot:
-                raise ValidationDomainError(
-                    f"Неверный формат spell_slots для уровня '{level}'"
-                )
+                raise ValidationDomainError(f"Неверный формат spell_slots для уровня '{level}'")
             total = int(slot["total"])
             used = int(slot["used"])
             if total < 0 or used < 0 or used > total:
-                raise ValidationDomainError(
-                    f"Неверные значения spell_slots для уровня '{level}'"
-                )
+                raise ValidationDomainError(f"Неверные значения spell_slots для уровня '{level}'")
             normalized[str(level)] = {"total": total, "used": used}
         return normalized
 
@@ -82,17 +77,13 @@ class CharacterService:
     def apply_feature_modifiers(character: Character, modifiers: dict[str, int]) -> None:
         for field, bonus in modifiers.items():
             if not -10 <= bonus <= 10:
-                raise ValidationDomainError(
-                    f"Значение modifiers['{field}'] вне диапазона от -10 до 10"
-                )
+                raise ValidationDomainError(f"Значение modifiers['{field}'] вне диапазона от -10 до 10")
             if field not in ALLOWED_FEATURE_MODIFIER_FIELDS:
                 raise ValidationDomainError(f"Поле '{field}' нельзя изменять через modifiers")
 
             current_val = getattr(character, field, None)
             if not isinstance(current_val, int):
-                raise ValidationDomainError(
-                    f"Поле '{field}' не поддерживает числовой модификатор"
-                )
+                raise ValidationDomainError(f"Поле '{field}' не поддерживает числовой модификатор")
             setattr(character, field, current_val + bonus)
 
         CharacterService._clamp_character_invariants(character)
@@ -106,17 +97,12 @@ class CharacterService:
     def normalize_character_patch(update_data: dict) -> dict:
         normalized = dict(update_data)
         if "spell_slots" in normalized:
-            normalized["spell_slots"] = CharacterService._coerce_spell_slots(
-                normalized["spell_slots"]
-            )
+            normalized["spell_slots"] = CharacterService._coerce_spell_slots(normalized["spell_slots"])
         if "skills" in normalized:
-            normalized["skills"] = {
-                str(key): int(value) for key, value in (normalized["skills"] or {}).items()
-            }
+            normalized["skills"] = {str(key): int(value) for key, value in (normalized["skills"] or {}).items()}
         if "saving_throws" in normalized:
             normalized["saving_throws"] = {
-                str(key): int(value)
-                for key, value in (normalized["saving_throws"] or {}).items()
+                str(key): int(value) for key, value in (normalized["saving_throws"] or {}).items()
             }
         return normalized
 

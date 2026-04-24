@@ -47,9 +47,9 @@ class CombatService:
             actual_cast_level = CharacterService.validate_cast_level(
                 cast_level if cast_level is not None else spell.level, spell.level
             )
-            slots = CharacterService.normalize_character_patch(
-                {"spell_slots": character.spell_slots or {}}
-            )["spell_slots"]
+            slots = CharacterService.normalize_character_patch({"spell_slots": character.spell_slots or {}})[
+                "spell_slots"
+            ]
         except ValidationDomainError as e:
             raise ValidationDomainError(str(e)) from e
         level_key = str(actual_cast_level)
@@ -58,14 +58,10 @@ class CombatService:
         if actual_cast_level > 0:
             slot_data = slots.get(level_key)
             if slot_data is None:
-                raise ValidationDomainError(
-                    f"Нет доступных ячеек {actual_cast_level} уровня!"
-                )
+                raise ValidationDomainError(f"Нет доступных ячеек {actual_cast_level} уровня!")
 
             if slot_data["total"] - slot_data["used"] <= 0:
-                raise ValidationDomainError(
-                    f"Нет доступных ячеек {actual_cast_level} уровня!"
-                )
+                raise ValidationDomainError(f"Нет доступных ячеек {actual_cast_level} уровня!")
 
             slot_data["used"] += 1
             slots[level_key] = slot_data
@@ -106,9 +102,7 @@ class CombatService:
                     "type": spell.damage_type,
                 }
             except ValueError as e:
-                raise ValidationDomainError(
-                    f"Ошибка в формуле кубиков урона: {e}"
-                ) from e
+                raise ValidationDomainError(f"Ошибка в формуле кубиков урона: {e}") from e
 
         return response_data
 
@@ -139,9 +133,7 @@ class CombatService:
                     "type": getattr(spell, "damage_type", "Магический"),
                 }
             except ValueError as e:
-                raise ValidationDomainError(
-                    f"Ошибка в формуле кубиков урона: {e}"
-                ) from e
+                raise ValidationDomainError(f"Ошибка в формуле кубиков урона: {e}") from e
 
         if not getattr(spell, "requires_attack_roll", False) and not damage_dice:
             response_data["effect"] = "Заклинание применено (без бросков урона/попадания)"

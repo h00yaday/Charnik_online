@@ -240,9 +240,7 @@ async def cast_spell(
     usecase = build_usecase(db)
     try:
         spell = await usecase.get_owned_spell(spell_id, character_id, current_user.id)
-        CharacterService.validate_cast_level(
-            cast_level if cast_level is not None else spell.level, spell.level
-        )
+        CharacterService.validate_cast_level(cast_level if cast_level is not None else spell.level, spell.level)
 
         char_stmt = (
             select(Character)

@@ -16,9 +16,7 @@ class FeatureCreate(FeatureBase):
     def validate_modifier_range(self):
         for key, value in self.modifiers.items():
             if not -10 <= value <= 10:
-                raise ValueError(
-                    f"Модификатор '{key}' должен быть в диапазоне от -10 до 10"
-                )
+                raise ValueError(f"Модификатор '{key}' должен быть в диапазоне от -10 до 10")
         return self
 
 
@@ -171,11 +169,7 @@ class CharacterUpdate(BaseModel):
 
     @model_validator(mode="after")
     def validate_hp_invariant(self):
-        if (
-            self.current_hp is not None
-            and self.max_hp is not None
-            and self.current_hp > self.max_hp
-        ):
+        if self.current_hp is not None and self.max_hp is not None and self.current_hp > self.max_hp:
             raise ValueError("current_hp cannot exceed max_hp")
         return self
 
@@ -191,13 +185,13 @@ class UserCreate(BaseModel):
     city: str = Field(min_length=1, max_length=255)
     state: str = Field(min_length=1, max_length=255)
     zip_code: str = Field(min_length=1, max_length=255)
+
     @model_validator(mode="after")
     def validate_password_strength(self):
-        if not any(ch.isalpha() for ch in self.password) or not any(
-            ch.isdigit() for ch in self.password
-        ):
+        if not any(ch.isalpha() for ch in self.password) or not any(ch.isdigit() for ch in self.password):
             raise ValueError("Пароль должен содержать буквы и цифры")
         return self
+
     @field_validator("initiative_bonus")
     @classmethod
     def prevent_nan(cls, v):

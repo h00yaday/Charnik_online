@@ -24,17 +24,13 @@ class CharacterUseCase:
             raise EntityNotFoundError("Персонаж не найден")
         return character
 
-    async def get_owned_attack(
-        self, attack_id: int, character_id: int, owner_id: int
-    ) -> Attack:
+    async def get_owned_attack(self, attack_id: int, character_id: int, owner_id: int) -> Attack:
         attack = await self.repo.get_owned_attack(attack_id, character_id, owner_id)
         if not attack:
             raise EntityNotFoundError("Атака не найдена или у вас нет к ней доступа")
         return attack
 
-    async def get_owned_spell(
-        self, spell_id: int, character_id: int, owner_id: int
-    ) -> Spell:
+    async def get_owned_spell(self, spell_id: int, character_id: int, owner_id: int) -> Spell:
         spell = await self.repo.get_owned_spell(spell_id, character_id, owner_id)
         if not spell:
             raise EntityNotFoundError("Заклинание не найдено или у вас нет к нему доступа")
