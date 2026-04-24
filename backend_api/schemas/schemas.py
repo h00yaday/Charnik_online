@@ -177,14 +177,13 @@ class CharacterUpdate(BaseModel):
 class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
     password: str = Field(min_length=8, max_length=72)
-    initiative_bonus: int = Field(default=0, ge=-10, le=20)
-    first_name: str = Field(min_length=1, max_length=255)
-    last_name: str = Field(min_length=1, max_length=255)
-    phone: str = Field(min_length=1, max_length=255)
-    address: str = Field(min_length=1, max_length=255)
-    city: str = Field(min_length=1, max_length=255)
-    state: str = Field(min_length=1, max_length=255)
-    zip_code: str = Field(min_length=1, max_length=255)
+    first_name: str | None = Field(default=None, max_length=255)
+    last_name: str | None = Field(default=None, max_length=255)
+    phone: str | None = Field(default=None, max_length=255)
+    address: str | None = Field(default=None, max_length=255)
+    city: str | None = Field(default=None, max_length=255)
+    state: str | None = Field(default=None, max_length=255)
+    zip_code: str | None = Field(default=None, max_length=255)
 
     @model_validator(mode="after")
     def validate_password_strength(self):
