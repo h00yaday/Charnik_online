@@ -177,29 +177,12 @@ class CharacterUpdate(BaseModel):
 class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
     password: str = Field(min_length=8, max_length=72)
-    first_name: str | None = Field(default=None, max_length=255)
-    last_name: str | None = Field(default=None, max_length=255)
-    phone: str | None = Field(default=None, max_length=255)
-    address: str | None = Field(default=None, max_length=255)
-    city: str | None = Field(default=None, max_length=255)
-    state: str | None = Field(default=None, max_length=255)
-    zip_code: str | None = Field(default=None, max_length=255)
 
     @model_validator(mode="after")
     def validate_password_strength(self):
         if not any(ch.isalpha() for ch in self.password) or not any(ch.isdigit() for ch in self.password):
             raise ValueError("Пароль должен содержать буквы и цифры")
         return self
-
-    @field_validator("initiative_bonus")
-    @classmethod
-    def prevent_nan(cls, v):
-        try:
-            if v is None or str(v).lower() == "nan":
-                return 0
-            return int(v)
-        except ValueError:
-            return 0
 
 
 class UserLogin(BaseModel):
