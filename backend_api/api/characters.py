@@ -53,6 +53,7 @@ async def create_character(
 
     new_char = Character(**char_data, owner_id=current_user.id)
     new_char.current_hp = char_in.max_hp
+
     CharacterService._clamp_character_invariants(new_char)
 
     db.add(new_char)

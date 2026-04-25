@@ -138,16 +138,8 @@ class CharacterResponse(CharacterBase):
     model_config = ConfigDict(from_attributes=True)
 
 
-class CharacterListItem(BaseModel):
+class CharacterListItem(CharacterBase):
     id: int
-    name: str
-    level: int
-    race: str
-    character_class: str
-    current_hp: int
-    max_hp: int
-    armor_class: int
-
     model_config = ConfigDict(from_attributes=True)
 
 
