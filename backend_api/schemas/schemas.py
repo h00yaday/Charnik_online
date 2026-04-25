@@ -151,7 +151,7 @@ class CharacterUpdate(BaseModel):
     skills: dict[str, int] | None = None
     saving_throws: dict[str, int] | None = None
     spell_slots: dict[str, SpellSlot] | None = None
-
+    speed: int | None = Field(default=None, ge=0, le=120)
     strength: int | None = Field(default=None, ge=1, le=30)
     dexterity: int | None = Field(default=None, ge=1, le=30)
     constitution: int | None = Field(default=None, ge=1, le=30)

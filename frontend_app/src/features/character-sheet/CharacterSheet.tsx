@@ -208,6 +208,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
   const closeSpellModal = useCallback(() => setShowSpellModal(false), []);
   const closeFeatureModal = useCallback(() => setShowFeatureModal(false), []);
   const updateLevel = useCallback((newLevel: number) => updateField('level', newLevel), [updateField]);
+  const updateSpeed = useCallback((newSpeed: number) => updateField('speed', newSpeed), [updateField]);
   const updateStat = useCallback((statId: StatKey, value: number) => {
     updateField(statId, Math.max(1, Math.min(30, value)));
   }, [updateField]);
@@ -221,6 +222,7 @@ export default function CharacterSheet({ character,  onBack }: Props) {
       <CharacterHeader 
         character={localChar} 
         onBack={onBack} 
+        onUpdateSpeed={updateSpeed}
         profBonus={profBonus} 
         onLongRest={handleLongRest} 
         onShortRest={handleShortRest} 

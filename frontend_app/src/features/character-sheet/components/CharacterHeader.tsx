@@ -7,16 +7,32 @@ interface Props {
   onBack: () => void;
   profBonus: number;
   onLongRest: () => void;
+  onUpdateSpeed: (newSpeed: number) => void;
   onShortRest: () => void;
   onUpdateLevel: (newLevel: number) => void;
 }
 
-export default function CharacterHeader({ character, onBack, profBonus, onLongRest, onShortRest, onUpdateLevel }: Props) {
+export default function CharacterHeader({ character, onBack, profBonus, onLongRest, onShortRest, onUpdateLevel, onUpdateSpeed }: Props) {
   // Состояния для режима редактирования уровня
   const [isEditingLevel, setIsEditingLevel] = useState(false);
   const [tempLevel, setTempLevel] = useState<number | string>(character.level);
+  const [isEditingSpeed, setIsEditingSpeed] = useState(false);
+  const [tempSpeed, setTempSpeed] = useState<number | string>(character.speed);
 
-  // Синхронизируем локальный стейт, если уровень обновился снаружи
+useEffect(() => {
+  setTempSpeed(character.speed);
+}, [character.speed]);
+
+const handleSaveSpeed = () => {
+  let numSpeed = typeof tempSpeed === 'string' ? parseInt(tempSpeed) : tempSpeed;
+  if (isNaN(numSpeed) || numSpeed < 0) numSpeed = 0;
+  
+  if (numSpeed !== character.speed) {
+    onUpdateSpeed(numSpeed);
+  }
+  setTempSpeed(numSpeed);
+  setIsEditingSpeed(false);
+};
   useEffect(() => {
     setTempLevel(character.level);
   }, [character.level]);
@@ -36,7 +52,7 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
   const decrementLevel = () => setTempLevel(prev => Math.max(1, (typeof prev === 'string' ? (parseInt(prev) || 1) : prev) - 1));
   const incrementLevel = () => setTempLevel(prev => Math.min(20, (typeof prev === 'string' ? (parseInt(prev) || 1) : prev) + 1));
 
-  // --- ВАЖНЫЕ ВЫЧИСЛЕНИЯ (ОНИ ПОТЕРЯЛИСЬ) ---
+
   // Высчитываем процент ХП для цвета полоски здоровья
   const hpPercentage = character.max_hp > 0
     ? Math.round((character.current_hp / character.max_hp) * 100)
@@ -46,8 +62,8 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
   if (hpPercentage <= 20) hpColor = 'bg-red-500';
 
   const dexMod = getModifier(character.dexterity);
-  const totalInitiative = dexMod + toNum(character.initiative_bonus);
-  // ------------------------------------------
+  const totalInitiative = dexMod + toNum(character.initiative_bonus.toString());
+  
 
   return (
     <div className="bg-slate-900 border-b border-slate-800 pt-6 pb-6 px-4 sticky top-0 z-40 shadow-xl">
@@ -103,9 +119,24 @@ export default function CharacterHeader({ character, onBack, profBonus, onLongRe
               {totalInitiative >= 0 ? `+${totalInitiative}` : totalInitiative}
             </span>
           </div>
-          <div className="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700">
+          <div 
+            className="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700 cursor-pointer"
+            onClick={() => !isEditingSpeed && setIsEditingSpeed(true)}
+          >
             <span className="block text-[10px] text-slate-500 font-bold uppercase mb-0.5 tracking-wider">Скор.</span>
-            <span className="text-2xl font-black text-amber-400">{character.speed}</span>
+            {isEditingSpeed ? (
+              <input
+                type="number"
+                value={tempSpeed}
+                onChange={(e) => setTempSpeed(e.target.value)}
+                onBlur={handleSaveSpeed}
+                onKeyDown={(e) => e.key === 'Enter' && handleSaveSpeed()}
+                className="text-2xl font-black text-amber-400 w-12 text-center bg-transparent outline-none [&::-webkit-inner-spin-button]:appearance-none"
+                autoFocus
+              />
+            ) : (
+              <span className="text-2xl font-black text-amber-400">{character.speed}</span>
+            )}
           </div>
           <div className="bg-slate-800 px-4 py-2 rounded-xl text-center border border-slate-700">
             <span className="block text-[10px] text-slate-500 font-bold uppercase mb-0.5 tracking-wider">БМ</span>

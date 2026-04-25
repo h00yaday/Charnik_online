@@ -49,9 +49,10 @@ export async function parseOrThrow(response: Response): Promise<Response> {
     if (typeof data.detail === 'string') {
       detail = data.detail;
     } else if (Array.isArray(data.detail)) {
-      detail = data.detail.map((err: any) => err.msg).join(', ');
+      detail = data.detail.map((err: { msg: string }) => err.msg).join(', ');
     }
   } catch {
+    detail = `HTTP ${response.status}`;
   }
 
   const error = new ApiError(response.status, detail);

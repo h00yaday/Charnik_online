@@ -12,11 +12,11 @@ export function formatMod(mod?: number | null): string {
 export function getProfBonus(level: number): number {
   return Math.ceil(level / 4) + 1;
 }
-export function toNum(val: any): number {
+export function toNum(val: string): number {
   const parsed = Number(val);
   return isNaN(parsed) ? 0 : parsed;
 };
 
 export function getInitiative(dex: number | undefined): number {
-  return Math.floor((toNum(dex) - 10) / 2);
+  return Math.floor((toNum(dex?.toString() || '0') - 10) / 2);
 };
