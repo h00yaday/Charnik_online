@@ -10,3 +10,5 @@ python-multipart
 alembic
 ruff
 redis>=5.0.0
+email-validator
+python-dotenv

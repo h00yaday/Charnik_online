@@ -6,9 +6,9 @@ interface AuthProps {
 }
 
 export default function Auth({ onLogin }: AuthProps) {
-  // ... (вся логика handleSubmit и состояния остается точно такой же, как была)
   const [isLoginMode, setIsLoginMode] = useState(true);
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState(''); 
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -38,7 +38,7 @@ export default function Auth({ onLogin }: AuthProps) {
         const response = await fetchWithAuth('/auth/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ username, password }),
+          body: JSON.stringify({ username, email, password }), 
           credentials: 'include',
         });
 
@@ -48,6 +48,7 @@ export default function Auth({ onLogin }: AuthProps) {
         setIsLoginMode(true);
         setError('Регистрация успешна! Теперь войдите.');
         setPassword('');
+        setEmail('');
       }
     } catch (err: unknown) {
       if (err instanceof ApiError) {
@@ -86,6 +87,20 @@ export default function Auth({ onLogin }: AuthProps) {
             />
           </div>
 
+          {!isLoginMode && (
+            <div>
+              <label className="block text-sm font-medium text-slate-400 mb-2">Email</label>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-slate-200 outline-none transition-all"
+                placeholder="ваша@почта.com"
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-slate-400 mb-2">Пароль</label>
             <input
@@ -114,10 +129,10 @@ export default function Auth({ onLogin }: AuthProps) {
             onClick={() => {
               setIsLoginMode(!isLoginMode);
               setError('');
+              setEmail('');
             }}
             className="text-orange-400 hover:text-orange-300 font-semibold transition-colors"
           >
-            {/* ИСПРАВЛЕНО ЗДЕСЬ */}
             {isLoginMode ? 'Создать аккаунт' : 'Войти в систему'}
           </button>
         </p>

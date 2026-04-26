@@ -27,18 +27,11 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     await CharacterService.ensure_username_available(db, user_in.username)
     email_check_result = await db.execute(select(User).where(User.email == user_in.email))
     if email_check_result.scalar_one_or_none():
-        raise HTTPException(
-            status_code=400, 
-            detail="Пользователь с таким email уже существует"
-        )
-    
+        raise HTTPException(status_code=400, detail="Пользователь с таким email уже существует")
+
     hashed_pwd = await get_password_hash(user_in.password)
-    
-    new_user = User(
-        username=user_in.username,
-        hashed_password=hashed_pwd,
-        email=user_in.email
-    )
+
+    new_user = User(username=user_in.username, hashed_password=hashed_pwd, email=user_in.email)
 
     db.add(new_user)
     await db.commit()

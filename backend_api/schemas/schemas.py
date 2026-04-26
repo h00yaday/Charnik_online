@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field, model_validator, EmailStr
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 DICE_PATTERN = r"^\s*(?:[+-]?\s*(?:\d+[dD]\d+|\d+)\s*)+$"
 USERNAME_PATTERN = r"^[A-Za-z0-9_]{3,50}$"
@@ -170,6 +170,7 @@ class UserCreate(BaseModel):
     username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
     password: str = Field(min_length=8, max_length=72)
     email: EmailStr = Field(min_length=5, max_length=255)
+
     @model_validator(mode="after")
     def validate_password_strength(self):
         if not any(ch.isalpha() for ch in self.password) or not any(ch.isdigit() for ch in self.password):
