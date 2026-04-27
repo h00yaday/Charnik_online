@@ -106,7 +106,7 @@ export default function Auth({ onLogin }: AuthProps) {
             <input
               type="password"
               required
-              minLength={12}
+              minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent text-slate-200 outline-none transition-all"

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 DICE_PATTERN = r"^\s*(?:[+-]?\s*(?:\d+[dD]\d+|\d+)\s*)+$"
 USERNAME_PATTERN = r"^[A-Za-z0-9_]{3,50}$"
@@ -167,7 +167,7 @@ class CharacterUpdate(BaseModel):
 
 
 class UserCreate(BaseModel):
-    username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
+    username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN, strip_whitespace=True)
     password: str = Field(min_length=8, max_length=72)
     email: EmailStr = Field(min_length=5, max_length=255)
 
@@ -177,9 +177,22 @@ class UserCreate(BaseModel):
             raise ValueError("Пароль должен содержать буквы и цифры")
         return self
 
+    @model_validator(mode="after")
+    def validate_password_length(self):
+        if len(self.password) < 8:
+            raise ValueError("Пароль должен содержать не менее 8 символов")
+        return self
+
+    @field_validator("username", mode="before")
+    @classmethod
+    def check_no_spaces(cls, value: str):
+        if isinstance(value, str) and " " in value.strip():
+            raise ValueError("Имя пользователя не должно содержать пробелы")
+        return value
+
 
 class UserLogin(BaseModel):
-    username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN)
+    username: str = Field(min_length=3, max_length=50, pattern=USERNAME_PATTERN, strip_whitespace=True)
     password: str = Field(min_length=1, max_length=72)
 
 
