@@ -111,6 +111,5 @@ jobs:
             echo "MAIL_SERVER=$MAIL_SERVER" >> .env
             echo "MAIL_FROM_NAME=$MAIL_FROM_NAME" >> .env
             
-            # Удаляем предыдущие контейнеры и запускаем новые
-            sudo docker-compose down --remove-orphans
-            sudo docker-compose up -d --build --remove-orphans
+            sudo docker compose down --remove-orphans
+            sudo docker compose up -d --build --remove-orphans
