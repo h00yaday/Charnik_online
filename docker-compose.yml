@@ -44,6 +44,8 @@ services:
         condition: service_healthy 
       redis:
         condition: service_started
+      rabbitmq:
+        condition: service_healthy
     env_file:
       - .env 
     volumes:
@@ -75,9 +77,51 @@ services:
       - .env
     volumes:
       - redis_data:/data
+    
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: dnd_rabbitmq
+    restart: always
+    expose:
+      - "5672"
+    ports:
+      - "15672:15672" # Порт для веб-панели RabbitMQ (логин/пароль: guest/guest)
+    env_file:
+      - .env
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD-SHELL", "rabbitmqctl -q status || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: ./backend_api
+    container_name: dnd_celery_worker
+    restart: always
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    volumes:
+      - ./backend_api:/app
+    command: celery -A core.celery_app.celery_app worker --loglevel=info
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
 
 volumes:
   pgdata:
   caddy_data:
   caddy_config:
   redis_data:
+  rabbitmq_data:

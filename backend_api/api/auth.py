@@ -11,6 +11,7 @@ from db.database import get_db
 from db.models import User
 from schemas.schemas import UserCreate, UserLogin, UserResponse
 from services.character_service import CharacterService
+from services.email_service import send_welcome_email
 
 login_limiter = RateLimiter(capacity=5, refill_amount=1, refill_period_ms=10000)
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -36,6 +37,19 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    try:
+        print("=== ПОПЫТКА ОТПРАВКИ ЗАДАЧИ В CELERY ===")
+        print(f"Email: {new_user.email}, Username: {new_user.username}")
+
+        task = send_welcome_email.delay(new_user.email, new_user.username)
+
+        print(f"=== ЗАДАЧА УСПЕШНО ОТПРАВЛЕНА! Task ID: {task.id} ===")
+    except Exception as e:
+        print("=== ОШИБКА ПРИ ОТПРАВКЕ ЗАДАЧИ В CELERY ===")
+        print(f"Тип ошибки: {type(e).__name__}")
+        print(f"Описание: {e}")
+        print("==========================================")
+
     return new_user
 
 
