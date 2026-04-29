@@ -199,7 +199,7 @@ export default function FeatureModal({ onClose, onSubmit }: Props) {
                   key={idx} type="button" onClick={() => handleSelectResult(res)}
                   className="w-full text-left p-3 hover:bg-emerald-900/40 text-slate-200 text-sm border-b border-slate-700/50 last:border-0 transition-colors"
                 >
-                  <span className="font-bold text-emerald-400">{res.name}</span> <span className="text-xs text-slate-400 ml-2">({res.route})</span>
+                  <span className="font-bold text-emerald-400">{String(res.name)}</span> <span className="text-xs text-slate-400 ml-2">({String(res.route)})</span>
                 </button>
               ))}
             </div>

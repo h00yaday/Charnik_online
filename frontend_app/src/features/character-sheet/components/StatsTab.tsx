@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import type { Character, SkillKey, StatKey } from '../../../types/character';
 import { SKILLS, STATS } from '../../../constants/dnd';
-import { getModifier, formatMod, toNum } from '../../../utils/math';
+import { getModifier, formatMod } from '../../../utils/math';
 
 interface Props {
   character: Character;
@@ -9,7 +9,7 @@ interface Props {
   onToggleSkill: (skillId: SkillKey) => void;
   onToggleSave: (statId: StatKey) => void;
   onUpdateStat: (statId: StatKey, value: number) => void;
-  onRoll: (url: string) => void; // <--- ДОБАВИЛИ НОВЫЙ ПРОПС
+  onRoll: (url: string) => void; 
 }
 
 const STAT_LABELS_SHORT: Record<StatKey, string> = {
@@ -42,7 +42,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
         <div className="lg:col-span-5 grid grid-cols-2 gap-4">
           {STATS.map(stat => {
             const statId = stat.id;
-            const score = toNum(character[statId]);
+            const score = Number(character[statId]);
             const mod = getModifier(score);
             const statLabel = STAT_LABELS_SHORT[statId];
             const profLevelSave = character.saving_throws[statId] || 0;
@@ -61,41 +61,40 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
                   <span className="text-xs font-black text-slate-500 tracking-widest block">{statLabel}</span>
                   <span className="text-4xl font-black text-slate-200 block drop-shadow-md">{formatMod(mod)}</span>
                   {isEditing && (
-    <div className="mt-2 flex justify-center items-center gap-1.5 bg-slate-900 rounded-full px-2 py-0.5 mx-auto w-max border border-slate-700/50">
-      <button onClick={(e) => {
-        e.stopPropagation();
-        const newVal = score - 1;
-        onUpdateStat(statId, newVal);
-        setTempStats(prev => ({...prev, [statId]: String(newVal)}));
-      }} className="text-slate-500 hover:text-red-400 font-bold text-lg leading-none px-1.5">-</button>
+                    <div className="mt-2 flex justify-center items-center gap-1.5 bg-slate-900 rounded-full px-2 py-0.5 mx-auto w-max border border-slate-700/50">
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        const newVal = score - 1;
+                        onUpdateStat(statId, newVal);
+                        setTempStats(prev => ({...prev, [statId]: String(newVal)}));
+                      }} className="text-slate-500 hover:text-red-400 font-bold text-lg leading-none px-1.5">-</button>
 
-      <input
-        type="number"
-        value={tempStats[statId] !== undefined ? tempStats[statId] : score}
-        onChange={(e) => setTempStats(prev => ({ ...prev, [statId]: e.target.value }))}
-        onBlur={() => {
-          const val = tempStats[statId];
-          if (val !== undefined) {
-            const num = parseInt(val);
-            onUpdateStat(statId, isNaN(num) ? 0 : num); // Если оставили пустым, будет 0
-            // Очищаем локальный стейт, чтобы снова брать значение из пропсов
-            const newTemp = { ...tempStats };
-            delete newTemp[statId];
-            setTempStats(newTemp);
-          }
-        }}
-        onClick={(e) => e.stopPropagation()}
-        className="bg-transparent text-amber-400 w-8 text-center font-mono text-xs outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]"
-      />
+                      <input
+                        type="number"
+                        value={tempStats[statId] !== undefined ? tempStats[statId] : score}
+                        onChange={(e) => setTempStats(prev => ({ ...prev, [statId]: e.target.value }))}
+                        onBlur={() => {
+                          const val = tempStats[statId];
+                          if (val !== undefined) {
+                            const num = parseInt(val);
+                            onUpdateStat(statId, isNaN(num) ? 0 : num);
+                            const newTemp = { ...tempStats };
+                            delete newTemp[statId];
+                            setTempStats(newTemp);
+                          }
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-transparent text-amber-400 w-8 text-center font-mono text-xs outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none [appearance:textfield]"
+                      />
 
-      <button onClick={(e) => {
-        e.stopPropagation();
-        const newVal = score + 1;
-        onUpdateStat(statId, newVal);
-        setTempStats(prev => ({...prev, [statId]: String(newVal)}));
-      }} className="text-slate-500 hover:text-green-400 font-bold text-lg leading-none px-1.5">+</button>
-    </div>
-  )}
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        const newVal = score + 1;
+                        onUpdateStat(statId, newVal);
+                        setTempStats(prev => ({...prev, [statId]: String(newVal)}));
+                      }} className="text-slate-500 hover:text-green-400 font-bold text-lg leading-none px-1.5">+</button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Спасбросок */}
@@ -105,7 +104,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
                       e.stopPropagation();
                       onToggleSave(statId);
                     } else {
-                      e.stopPropagation(); // Блокируем клик по родительскому блоку (самой характеристике)
+                      e.stopPropagation();
                       onRoll(`/characters/${character.id}/roll-check?action=${encodeURIComponent(`Спасбросок: ${statLabel}`)}&bonus=${totalSaveBonus}`);
                     }
                   }}
@@ -134,7 +133,7 @@ export default function StatsTab({ character, profBonus, onToggleSkill, onToggle
           <h3 className="text-xl font-bold text-slate-300 mb-5 border-b border-slate-700 pb-3">Навыки</h3>
           <div className="space-y-1.5">
             {SKILLS.map(skill => {
-              const statScore = character[skill.stat];
+              const statScore = Number(character[skill.stat]);
               const mod = getModifier(statScore);
               const profLevel = character.skills[skill.id] || 0;
               const totalBonus = mod + (profLevel * profBonus);
