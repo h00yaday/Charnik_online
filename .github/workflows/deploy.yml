@@ -1,34 +1,53 @@
-name: Deploy to AWS EC2
+name: Deploy to Docker Swarm
 
 on:
   push:
-    branches:
-      - main 
-  workflow_dispatch:
+    branches: [ main ]
+
 jobs:
-  lint:
+  # === ШАГ 1: Сборка и отправка образов в GitHub Packages ===
+  build-and-push:
     runs-on: ubuntu-latest
+    env:                   
+      REPO_LOWER: ""
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        
-      - name: Run Ruff Linter
-        run: uvx ruff check backend_api/
-        
-      - name: Run Ruff Formatter check
-        run: uvx ruff format --check backend_api/
-        
-  deploy:
-    runs-on: ubuntu-latest
 
+      # Переводим название репозитория в нижний регистр для Docker
+      - name: Lowercase repo name
+        run: echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Backend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend_api
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/backend:latest #ignore
+
+      - name: Build and push Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend_app
+          push: true
+          tags: ghcr.io/${{ env.REPO_LOWER }}/frontend:latest # ignore
+
+  deploy:
+    needs: build-and-push # Ждем, пока образы соберутся
+    runs-on: ubuntu-latest
     steps:
-      - name: Deploy to Server via SSH
+      - name: Deploy to Swarm via SSH
         uses: appleboy/ssh-action@v1.0.3
         env:
-          REPO_URL: "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
-          # === DATABASE ===
           POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
           POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
           POSTGRES_DB: ${{ secrets.POSTGRES_DB }}
@@ -36,23 +55,15 @@ jobs:
           POSTGRES_HOST: ${{ secrets.POSTGRES_HOST }}
           POSTGRES_PORT: ${{ secrets.POSTGRES_PORT }}
           DB_ECHO: ${{ secrets.DB_ECHO }}
-
-          # === FastAPI ===
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           ALGORITHM: ${{ secrets.ALGORITHM }}
           ACCESS_TOKEN_EXPIRE_MINUTES: ${{ secrets.ACCESS_TOKEN_EXPIRE_MINUTES }}
           ENVIRONMENT: ${{ secrets.ENVIRONMENT }}
-
-          # === Frontend ===
           VITE_API_URL: ${{ secrets.VITE_API_URL }}
           DOMAIN_NAME: ${{ secrets.DOMAIN_NAME }} 
-
-          # === Redis ===
           REDIS_HOST: ${{ secrets.REDIS_HOST }}
           REDIS_PORT: ${{ secrets.REDIS_PORT }}
           REDIS_URL: "redis://${{ secrets.REDIS_HOST }}:${{ secrets.REDIS_PORT }}"
-
-          # === Mail & Celery (НОВОЕ) ===
           CELERY_BROKER_URL: "amqp://guest:guest@rabbitmq:5672//"
           MAIL_USERNAME: ${{ secrets.MAIL_USERNAME }}
           MAIL_PASSWORD: ${{ secrets.MAIL_PASSWORD }}
@@ -60,49 +71,33 @@ jobs:
           MAIL_PORT: ${{ secrets.MAIL_PORT }}
           MAIL_SERVER: ${{ secrets.MAIL_SERVER }}
           MAIL_FROM_NAME: ${{ secrets.MAIL_FROM_NAME }}
-
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ${{ secrets.EC2_USERNAME }}
           key: ${{ secrets.EC2_SSH_KEY }}
           envs: POSTGRES_USER,POSTGRES_PASSWORD,POSTGRES_DB,DATABASE_URL,POSTGRES_HOST,POSTGRES_PORT,DB_ECHO,SECRET_KEY,ALGORITHM,ACCESS_TOKEN_EXPIRE_MINUTES,ENVIRONMENT,VITE_API_URL,DOMAIN_NAME,REDIS_HOST,REDIS_PORT,REDIS_URL,CELERY_BROKER_URL,MAIL_USERNAME,MAIL_PASSWORD,MAIL_FROM,MAIL_PORT,MAIL_SERVER,MAIL_FROM_NAME
           script: |
-            cd /home/ubuntu
-            
-            if [ ! -d "charnik_online" ]; then
-              git clone $REPO_URL charnik_online
-            fi
-            
-            cd charnik_online
+            cd /home/ubuntu/charnik_online
             git fetch origin main
             git reset --hard origin/main
             
-            # Собираем полный файл .env
-            
-            # === DATABASE ===
+            # Собираем .env файл
             echo "POSTGRES_USER=$POSTGRES_USER" > .env
             echo "POSTGRES_PASSWORD=$POSTGRES_PASSWORD" >> .env
             echo "POSTGRES_DB=$POSTGRES_DB" >> .env
             echo "POSTGRES_HOST=$POSTGRES_HOST" >> .env
             echo "POSTGRES_PORT=$POSTGRES_PORT" >> .env
             echo "DATABASE_URL=$DATABASE_URL" >> .env
-
-            # === FastAPI ===
             echo "SECRET_KEY=$SECRET_KEY" >> .env
             echo "ENVIRONMENT=$ENVIRONMENT" >> .env
             echo "ACCESS_TOKEN_EXPIRE_MINUTES=$ACCESS_TOKEN_EXPIRE_MINUTES" >> .env
             echo "ALGORITHM=$ALGORITHM" >> .env
             echo "DB_ECHO=$DB_ECHO" >> .env
-
-            # === Frontend ===
             echo "VITE_API_URL=$VITE_API_URL" >> .env
             echo "DOMAIN_NAME=$DOMAIN_NAME" >> .env
-            # === Redis ===
             echo "REDIS_HOST=$REDIS_HOST" >> .env
             echo "REDIS_PORT=$REDIS_PORT" >> .env
             echo "REDIS_URL=$REDIS_URL" >> .env
-            
-            # === Mail & Celery (НОВОЕ) ===
             echo "CELERY_BROKER_URL=$CELERY_BROKER_URL" >> .env
             echo "MAIL_USERNAME=$MAIL_USERNAME" >> .env
             echo "MAIL_PASSWORD=$MAIL_PASSWORD" >> .env
@@ -111,5 +106,8 @@ jobs:
             echo "MAIL_SERVER=$MAIL_SERVER" >> .env
             echo "MAIL_FROM_NAME=$MAIL_FROM_NAME" >> .env
             
-            sudo docker compose down --remove-orphans
-            sudo docker compose up -d --build --remove-orphans
+            echo "${{ secrets.GITHUB_TOKEN }}" | sudo docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            sudo docker compose down --remove-orphans || true
+            
+            sudo docker stack deploy -c docker-compose.swarm.yml dnd_app --with-registry-auth
