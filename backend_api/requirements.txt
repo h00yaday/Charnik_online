@@ -14,4 +14,3 @@ email-validator
 python-dotenv
 celery
 fastapi-mail
-secrets
