@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { ApiError, fetchWithAuth } from '../../utils/api';
+import { ApiError, fetchWithAuth, setCsrfToken } from '../../utils/api';
 
 interface AuthProps {
   onLogin: () => void;
@@ -33,6 +33,12 @@ export default function Auth({ onLogin }: AuthProps) {
 
         const data = await response.json();
         if (!response.ok) throw new Error(data.detail || 'Ошибка при входе');
+        
+        // Сохраняем CSRF токен из response для последующих запросов
+        if (data.csrf_token) {
+          setCsrfToken(data.csrf_token);
+        }
+        
         onLogin();
       } else {
         const response = await fetchWithAuth('/auth/register', {

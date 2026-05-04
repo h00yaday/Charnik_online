@@ -1,7 +1,26 @@
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
+from typing import Generic, TypeVar
 
 DICE_PATTERN = r"^\s*(?:[+-]?\s*(?:\d+[dD]\d+|\d+)\s*)+$"
 USERNAME_PATTERN = r"^[A-Za-z0-9_]{3,50}$"
+
+T = TypeVar('T')
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
+    """Generic paginated response wrapper"""
+    items: list[T]
+    total: int
+    limit: int
+    offset: int
+
+    @property
+    def has_next(self) -> bool:
+        return (self.offset + self.limit) < self.total
+
+    @property
+    def has_prev(self) -> bool:
+        return self.offset > 0
 
 
 class FeatureBase(BaseModel):
@@ -173,14 +192,18 @@ class UserCreate(BaseModel):
 
     @model_validator(mode="after")
     def validate_password_strength(self):
+        # Проверка на наличие букв и цифр
         if not any(ch.isalpha() for ch in self.password) or not any(ch.isdigit() for ch in self.password):
             raise ValueError("Пароль должен содержать буквы и цифры")
-        return self
-
-    @model_validator(mode="after")
-    def validate_password_length(self):
+        
+        # Проверка что пароль не содержит username
+        if self.username.lower() in self.password.lower():
+            raise ValueError("Пароль не должен содержать ваше имя пользователя")
+        
+        # Проверка минимальной длины (хотя Field уже это проверит)
         if len(self.password) < 8:
             raise ValueError("Пароль должен содержать не менее 8 символов")
+        
         return self
 
     @field_validator("username", mode="before")

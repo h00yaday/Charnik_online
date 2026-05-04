@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -21,6 +21,7 @@ from schemas.schemas import (
     FeatureResponse,
     SpellCreate,
     SpellResponse,
+    PaginatedResponse,
 )
 from services.character_service import CharacterService
 from services.character_usecase import CharacterUseCase
@@ -102,7 +103,7 @@ async def get_character(
         raise map_domain_error(exc) from exc
 
 
-@router.post("/{character_id}/attacks", response_model=AttackResponse)
+@router.post("/{character_id}/attacks", response_model=AttackResponse, status_code=status.HTTP_201_CREATED)
 async def add_attack_to_character(
     character_id: int,
     attack_in: AttackCreate,
@@ -123,7 +124,7 @@ async def add_attack_to_character(
     return new_attack
 
 
-@router.post("/{character_id}/spells", response_model=SpellResponse)
+@router.post("/{character_id}/spells", response_model=SpellResponse, status_code=status.HTTP_201_CREATED)
 async def add_spell_to_character(
     character_id: int,
     spell_in: SpellCreate,
@@ -283,7 +284,7 @@ async def delete_spell(
     await db.commit()
 
 
-@router.post("/{character_id}/features", response_model=FeatureResponse)
+@router.post("/{character_id}/features", response_model=FeatureResponse, status_code=status.HTTP_201_CREATED)
 async def add_feature_to_character(
     character_id: int,
     feature_in: FeatureCreate,

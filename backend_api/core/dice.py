@@ -16,7 +16,7 @@ def parse_and_roll(dice_notation: str) -> dict:
         raise ValueError("Формула не может быть пустой.")
 
     if not ALLOWED_PATTERN.match(clean_notation):
-        raise ValueError("Недопустимые символы в формуле.")
+        raise ValueError("Недопустимые символы в формуле. Используйте только цифры, 'd', '+', '-' (например: 1d20, 2d6+3, 1d8-1)")
 
     if clean_notation[0] not in "+-":
         clean_notation = "+" + clean_notation
@@ -24,7 +24,7 @@ def parse_and_roll(dice_notation: str) -> dict:
     matches = TERM_PATTERN.findall(clean_notation)
 
     if not matches:
-        raise ValueError("Формула не распознана.")
+        raise ValueError("Формула не распознана. Примеры: 1d20, 2d6+3, 1d8-1, 3d4+2-1")
     if len(matches) > MAX_TERMS:
         raise ValueError("Слишком много элементов в формуле.")
 

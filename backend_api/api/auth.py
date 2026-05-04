@@ -3,6 +3,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+import logging
 
 from core.config import settings
 from core.limiter import RateLimiter
@@ -12,6 +13,8 @@ from db.models import User
 from schemas.schemas import UserCreate, UserLogin, UserResponse
 from services.character_service import CharacterService
 from services.email_service import send_welcome_email
+
+logger = logging.getLogger(__name__)
 
 login_limiter = RateLimiter(capacity=5, refill_amount=1, refill_period_ms=10000)
 router = APIRouter(prefix="/auth", tags=["Auth"])
@@ -37,18 +40,13 @@ async def register(user_in: UserCreate, db: AsyncSession = Depends(get_db)):
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
+    
     try:
-        print("=== ПОПЫТКА ОТПРАВКИ ЗАДАЧИ В CELERY ===")
-        print(f"Email: {new_user.email}, Username: {new_user.username}")
-
+        logger.info(f"Attempting to send welcome email to {new_user.email} for user {new_user.username}")
         task = send_welcome_email.delay(new_user.email, new_user.username)
-
-        print(f"=== ЗАДАЧА УСПЕШНО ОТПРАВЛЕНА! Task ID: {task.id} ===")
+        logger.info(f"Welcome email task sent successfully. Task ID: {task.id}")
     except Exception as e:
-        print("=== ОШИБКА ПРИ ОТПРАВКЕ ЗАДАЧИ В CELERY ===")
-        print(f"Тип ошибки: {type(e).__name__}")
-        print(f"Описание: {e}")
-        print("==========================================")
+        logger.exception(f"Failed to send welcome email task for user {new_user.id}: {type(e).__name__}: {e}")
 
     return new_user
 
@@ -76,22 +74,23 @@ async def login(
     access_token = create_access_token(data={"sub": str(user.id)})
 
     is_secure = settings.ENVIRONMENT == "production"
+    samesite = "strict" if is_secure else "lax"
 
     response.set_cookie(
         key="access_token",
         value=access_token,
         httponly=True,
         secure=is_secure,
-        samesite="lax",
+        samesite=samesite,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
     csrf_token = CharacterService.issue_csrf_token()
     response.set_cookie(
         key="csrf_token",
         value=csrf_token,
-        httponly=False,
+        httponly=True,
         secure=is_secure,
-        samesite="lax",
+        samesite=samesite,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
@@ -100,7 +99,9 @@ async def login(
 
 @router.post("/logout")
 async def logout(response: Response):
-    # Удаляем куку при выходе
-    response.delete_cookie("access_token")
-    response.delete_cookie("csrf_token")
+    # Удаляем куки при выходе
+    is_secure = settings.ENVIRONMENT == "production"
+    samesite = "strict" if is_secure else "lax"
+    response.delete_cookie("access_token", samesite=samesite)
+    response.delete_cookie("csrf_token", samesite=samesite)
     return {"message": "Успешный выход"}

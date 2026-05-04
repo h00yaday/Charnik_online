@@ -3,7 +3,7 @@ import Auth from './features/auth/Auth';
 import Tavern from './features/tavern/Tavern';
 import CharacterSheet from './features/character-sheet/CharacterSheet';
 import type { Character } from './types/character';
-import { ApiError, fetchWithAuth, setNotifyHandler, setUnauthorizedHandler } from './utils/api';
+import { ApiError, fetchWithAuth, setNotifyHandler, setUnauthorizedHandler, setCsrfToken } from './utils/api';
 
 export default function App() {
   // Теперь мы просто храним статус авторизации
@@ -64,6 +64,8 @@ export default function App() {
       setIsAuthenticated(false);
       setSelectedCharacter(null);
       setCharacters([]);
+      // Очищаем CSRF токен при logout
+      setCsrfToken(null);
     }
   };
 

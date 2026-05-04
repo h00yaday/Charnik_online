@@ -1,9 +1,12 @@
 import asyncio
+import logging
 
 from fastapi_mail import ConnectionConfig, FastMail, MessageSchema, MessageType
 
 from core.celery_app import celery_app
 from core.config import settings
+
+logger = logging.getLogger(__name__)
 
 conf = ConnectionConfig(
     MAIL_USERNAME=settings.MAIL_USERNAME,
@@ -40,6 +43,18 @@ async def send_welcome_email_async(email: str, username: str):
     await fm.send_message(message)
 
 
-@celery_app.task
-def send_welcome_email(email: str, username: str):
-    asyncio.run(send_welcome_email_async(email, username))
+@celery_app.task(bind=True, max_retries=3, default_retry_delay=60)
+def send_welcome_email(self, email: str, username: str):
+    """
+    Отправляет приветственное письмо новому пользователю.
+    При ошибке автоматически повторяет попытку до 3 раз.
+    """
+    try:
+        logger.info(f"Starting to send welcome email to {email}")
+        asyncio.run(send_welcome_email_async(email, username))
+        logger.info(f"Welcome email successfully sent to {email}")
+    except Exception as e:
+        logger.exception(f"Failed to send welcome email to {email}: {type(e).__name__}: {e}")
+        # Повторяем задачу с экспоненциальной задержкой: 60s, 120s, 180s
+        retry_delay = 60 * (self.request.retries + 1)
+        raise self.retry(exc=e, countdown=retry_delay)

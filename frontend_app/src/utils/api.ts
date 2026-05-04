@@ -4,6 +4,17 @@ let unauthorizedHandler: UnauthorizedHandler | null = null;
 type NotifyHandler = (message: string) => void;
 let notifyHandler: NotifyHandler | null = null;
 
+// Сохраняем CSRF токен из response при login
+let csrfToken: string | null = null;
+
+export function setCsrfToken(token: string | null) {
+  csrfToken = token;
+}
+
+export function getCsrfToken(): string | null {
+  return csrfToken;
+}
+
 export class UnauthorizedError extends Error {
   constructor() {
     super('Unauthorized');
@@ -29,14 +40,6 @@ export function setUnauthorizedHandler(handler: UnauthorizedHandler | null) {
 
 export function setNotifyHandler(handler: NotifyHandler | null) {
   notifyHandler = handler;
-}
-
-export function getCsrfTokenFromCookie(): string | null {
-  const token = document.cookie
-    .split('; ')
-    .find((cookie) => cookie.startsWith('csrf_token='))
-    ?.split('=')[1];
-  return token ?? null;
 }
 
 export async function parseOrThrow(response: Response): Promise<Response> {
@@ -71,9 +74,9 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     headers.set('Content-Type', 'application/json');
   }
   if (options.method && !['GET', 'HEAD', 'OPTIONS'].includes(options.method.toUpperCase())) {
-    const csrfToken = getCsrfTokenFromCookie();
-    if (csrfToken && !headers.has('X-CSRF-Token')) {
-      headers.set('X-CSRF-Token', csrfToken);
+    const token = getCsrfToken();
+    if (token && !headers.has('X-CSRF-Token')) {
+      headers.set('X-CSRF-Token', token);
     }
   }
 

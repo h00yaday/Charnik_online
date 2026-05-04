@@ -23,7 +23,7 @@ app = FastAPI(title="D&D Manager API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost"],
+    allow_origins=settings.allowed_origins_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -39,7 +39,7 @@ async def validation_domain_error_handler(_: Request, exc: ValidationDomainError
     return JSONResponse(status_code=400, content={"detail": str(exc)})
 
 
-CSRF_EXEMPT_PATHS = {"/auth/login", "/auth/register", "/auth/logout"}
+CSRF_EXEMPT_PATHS = {"/auth/login", "/auth/register", "/auth/logout", "/api/auth/login", "/api/auth/register", "/api/auth/logout"}
 STATE_CHANGING_METHODS = {"POST", "PUT", "PATCH", "DELETE"}
 
 
@@ -55,19 +55,26 @@ async def csrf_protection_middleware(request: Request, call_next):
                 csrf_cookie = request.cookies.get("csrf_token")
                 csrf_header = request.headers.get("X-CSRF-Token")
 
+                # Оба токена должны быть present и совпадать
                 if not csrf_cookie or not csrf_header:
+                    print(f"CSRF token missing for path {path}, access_cookie: {bool(access_cookie)}, csrf_cookie: {bool(csrf_cookie)}, csrf_header: {bool(csrf_header)}")
                     return JSONResponse(
                         status_code=403,
                         content={"detail": "CSRF token missing"},
                     )
 
+                # Используем constant-time comparison для защиты от timing attacks
                 if not secrets.compare_digest(csrf_cookie, csrf_header):
+                    print(f"CSRF token mismatch for path {path}")
                     return JSONResponse(
                         status_code=403,
                         content={"detail": "CSRF token validation failed"},
                     )
+            else:
+                print(f"No access_token for state-changing request to {path}")
 
-    return await call_next(request)
+    response = await call_next(request)
+    return response
 
 
 @app.get("/")

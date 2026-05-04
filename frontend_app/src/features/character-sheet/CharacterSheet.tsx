@@ -43,6 +43,8 @@ export default function CharacterSheet({ character,  onBack }: Props) {
 
   const pendingPatchRef = useRef<Partial<Character>>({});
   const patchTimerRef = useRef<number | null>(null);
+  const retryCountRef = useRef<number>(0);
+  const maxRetries = 3;
 
   const flushCharacterPatch = useCallback(async () => {
     const payload = pendingPatchRef.current;
@@ -50,17 +52,31 @@ export default function CharacterSheet({ character,  onBack }: Props) {
     patchTimerRef.current = null;
 
     if (Object.keys(payload).length === 0) return;
+    
     try {
       await fetchWithAuth(`/characters/${character.id}`, {
         method: 'PATCH',
         body: JSON.stringify(payload),
       });
+      retryCountRef.current = 0; // Reset on success
     } catch (err: unknown) {
       if (!(err instanceof UnauthorizedError)) {
-        console.error('Ошибка сохранения данных', err);
+        retryCountRef.current++;
+        if (retryCountRef.current < maxRetries) {
+          console.warn(`Character patch failed (attempt ${retryCountRef.current}/${maxRetries}), will retry...`);
+          // Retry after delay
+          setTimeout(() => {
+            if (Object.keys(payload).length > 0) {
+              void flushCharacterPatch();
+            }
+          }, 1000 * retryCountRef.current); // Exponential backoff
+        } else {
+          console.error(`Character patch failed after ${maxRetries} attempts, discarding changes`);
+          retryCountRef.current = 0;
+        }
       }
     }
-  }, [character.id]);
+  }, [character.id, maxRetries]);
 
   const queueCharacterPatch = useCallback((patch: Partial<Character>) => {
     pendingPatchRef.current = { ...pendingPatchRef.current, ...patch };
